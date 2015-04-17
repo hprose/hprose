@@ -601,6 +601,10 @@ When hprose RPC works on HTTP, the hprose data is sended as the body of the POST
 
 Hprose RPC has no special requirements on HTTP head.
 
+== Socket Binding ==
+
+Hprose RPC can also work on TCP or UNIX socket. 
+
 =Formal Definitions=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
