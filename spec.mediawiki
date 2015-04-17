@@ -597,13 +597,21 @@ Hprose RPC communication can use any underlying network protocol for transport, 
 
 == HTTP Binding ==
 
-When hprose RPC works on HTTP, the hprose data is sended as the body of the POST request, and returned as the body in response.
+When hprose RPC works on HTTP, the hprose RPC data is sended as the body of the POST request, and returned as the body in response.
 
 Hprose RPC has no special requirements on HTTP head.
 
 == Socket Binding ==
 
-Hprose RPC can also work on TCP or UNIX socket. 
+Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC data is send as the head in 4 bytes big endian encoding, The hprose data is send as the body without encoding. for example:
+
+<pre>
+<0x00,0x00,0x00,0x18>Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
+</pre>
+
+<0x00,0x00,0x00,0x18> means 4 bytes big endian encoding of integer 24.
+
+The response format is also like this.
 
 =Formal Definitions=
 
