@@ -418,8 +418,6 @@ a2{a2{r1;a2{r1;r2;}}r2;}
 
 Hprose RPC protocol supports multicall, passing arguments by reference and synchronous and asynchronous communication.
 
-Hprose RPC communication can use any underlying network protocol for transport such as HTTP or TCP.
-
 Hprose RPC protocol is very simple. It consists of a few paragraphs data. Each piece of data contains at least 1 octet tag. The following are hprose RPC protocol tags:
 
 * 0x46('F'): Function List
@@ -592,6 +590,14 @@ Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # client mu
 
 Rs12"Hello world!"Es24"This is a error example."z                     # server reply
 </pre>
+
+= Transmission Protocol Binding =
+
+Hprose RPC communication can use any underlying network protocol for transport, such as HTTP, TCP or UNIX socket.
+
+== HTTP Binding ==
+
+When hprose RPC works on HTTP, the hprose data is sended as the body of the POST request, and returned as the body in response.
 
 =Formal Definitions=
 
