@@ -613,6 +613,8 @@ Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC dat
 
 The response format is also like this.
 
+This head is designed to deal with the packets of socket data quickly and easily.
+
 =Formal Definitions=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
