@@ -599,6 +599,8 @@ Hprose RPC communication can use any underlying network protocol for transport, 
 
 When hprose RPC works on HTTP, the hprose data is sended as the body of the POST request, and returned as the body in response.
 
+Hprose RPC has no special requirements on HTTP head.
+
 =Formal Definitions=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
