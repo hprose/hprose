@@ -617,7 +617,7 @@ This head is designed to deal with the packets of socket data quickly and easily
 
 == WebSocket Binding ==
 
-Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket, and no special requirements.
+Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket, and no other special requirements.
 
 =Formal Definitions=
 
