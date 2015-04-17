@@ -1,0 +1,751 @@
+=Design Goals=
+
+The hprose was created as a lightweight, self-describing, semi-text, compact, dynamic-typed, language-neutral, platform-neutral protocol. 
+
+The hprose protocol has the following design goals:
+
+* It must be self-describe, not require IDL or external schema definitions.
+* It must be human-readable except the original binary data, even if there is a little difficult.
+* It must be as compact as possible.
+* It must be as fast as possible.
+* It must be language-independent.
+* It must be platform-neutral.
+* It must support recursive types.
+* It must support unicode strings.
+* It must support 8-bit binary data without escaping or using attachments.
+* It must support encryption, compression, signature, and transaction context envelopes.
+
+=Serialization Format=
+
+Hprose serialization has 7 value types:
+
+# [[Hprose Specification#wiki-Integer|Integer]] (32-bit signed int)
+# [[Hprose Specification#wiki-Long|Long]] (unlimited long integer)
+# [[Hprose Specification#wiki-Double|Double]] (float, double or decimal)
+# [[Hprose Specification#wiki-Boolean|Boolean]]
+# [[Hprose Specification#wiki-UTF8_char|UTF8 char]] (16-bit unicode char, UTF8 format, 1-3 bytes)
+# [[Hprose Specification#wiki-Null|Null]]
+# [[Hprose Specification#wiki-Empty|Empty]] (empty string, empty binary data)
+
+4 simple reference types:
+
+# [[Hprose Specification#wiki-DateTime|DateTime]]
+# [[Hprose Specification#wiki-Bytes|Bytes]]
+# [[Hprose Specification#wiki-String|String]]
+# [[Hprose Specification#wiki-GUID|GUID]]
+
+and 3 recursive reference types:
+
+# [[Hprose Specification#wiki-List|List]]
+# [[Hprose Specification#wiki-Map|Map]]
+# [[Hprose Specification#wiki-Object|Object]]
+
+Each type is represented by one or more tags mixed data. Each tag is a octet. 
+
+The tags are case-sensitive. The serialization data are blank-sensitive.
+
+==Integer==
+
+If the integer <code>n</code> satisfies 0 &le; n &le; 9, the serialization data is represented by the octet 0x30 + n.
+
+The other integer is represented like this:
+
+<pre>
+i<n>;
+</pre>
+
+The tag <code>i</code> represents the beginning of the integer, and the tag <code>;</code> represents the end of the integer.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+0                        # int 0
+8                        # int 8
+i1234567;                # int 1234567
+i-128;                   # int -128
+</pre>
+
+==Long==
+
+The long integer <code>n</code> is represented like this:
+
+<pre>
+l<n>;
+</pre>
+
+The tag <code>l</code> represents the beginning of the long integer, and the tag <code>;</code> represents the end of the long integer.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+l1234567890987654321;    # long 1234567890987654321
+l-987654321234567890;    # long -987654321234567890
+</pre>
+
+==Double==
+
+The double type has a 3 special value: NaN, Positive Infinity and Negative Infinity.
+
+The NaN is represented by the octet <code>'N'</code>.
+
+The Positive Infinity is represented by two octets <code>'I+'</code>.
+
+The Negative Infinity is represented by two octets <code>'I-'</code>.
+
+The other double <code>n</code> is represented like this:
+
+<pre>
+d<n>;
+</pre>
+
+The tag <code>d</code> represents the beginning of the double. and the tag <code>;</code> represents the end of the double.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+N                        # NaN
+I+                       # Infinity
+I-                       # -Infinity
+d3.1415926535898;        # double 3.1415926535898
+d-0.1;                   # double -0.1
+d-1.45E23;               # double -1.45E23
+d3.76e-54;               # double 3.76e-54
+</pre>
+
+The exponential symbol <code>e</code> is case-insensitive.
+
+==Boolean==
+
+The octet <code>'t'</code> represents true, and the octet <code>'f'</code> represents false.
+
+<pre>
+t                        # true
+f                        # false
+</pre>
+
+==UTF8 char==
+
+Most languages have a unicode char type, such as Java, C#. UTF8 char is used to store this type data. So it can't stores all the unicode codepoint. If an unicode codepoint need 2 char to store, it will be serialized to a [[Hprose Specification#wiki-String|String]].
+
+The char c is represented like this:
+<pre>
+u<c>
+</pre>
+
+The tag <code>u</code> represents the beginning of the UTF8 char. There is no end tag, because UTF8 char is self-describe.
+
+<code><c></code> is the utf8 encode char. For example:
+
+<pre>
+uA                       # 'A' is stored as 1 octet  0x41
+u½                       # '½' is stored as 2 octets 0xC2 0xBD
+u∞                       # '∞' is stored as 3 octets 0xE2 0x88 0x9E
+</pre>
+
+==Null==
+
+Null represents a null pointer. The octet <code>'n'</code> represents the null value.
+
+<pre>
+n                        # null
+</pre>
+
+==Empty==
+
+Empty represents a empty string or empty binary data. The octet <code>'e'</code> represents the empty value.
+
+<pre>
+e                        # empty
+</pre>
+
+==DateTime==
+
+DateTime is a reference type in hprose, although in some programming languages ​​may be a value type. This will not bring any problems. We will discuss the difference between reference types and value types in [[Hprose Specification#wiki-Ref|Ref section]].
+
+DateTime type can represent local and utc time. The local time end with the tag <code>;</code>, and the utc time end with the tag <code>Z</code>.
+
+DateTime data can contain the year, month, day, hour, minute, second, millisecond, microsecond and nanosecond, but not all have to be required. It could only contain year, month, day to represent date or only contain hour, minute, second to represent time.
+
+The tag <code>D</code> represents the beginning of the date, The tag <code>T</code> represents the beginning of the time.
+
+For example:
+
+<pre>
+D20121229;                    # local date 2012-12-29
+D20121225Z                    # utc date 2012-12-25
+T032159;                      # local time 03:21:59
+T182343.654Z                  # utc time 18:23:43.654
+D20121221T151435Z             # utc datetime 2012-12-21 15:14:35
+D20501228T134359.324543123;   # local datetime 2050-12-28 13:43:59.324543123
+</pre>
+
+==Bytes==
+
+Bytes type represents binary data. It corresponds to byte[] or stream object in the programming language.
+
+The max length of bytes is 2147483647.
+
+The binary data <code>bytes</code> (assuming its length is <code>len</code>) is represented like this:
+
+<pre>
+b<len>"<bytes>"
+</pre>
+
+The tag <code>b</code> represents the beginning of binary data. If <code><len></code> is 0, <code><len></code> can be omitted. <code><bytes></code> is the raw binary data. The tag <code>"</code> is used to represent the beginning and the end of the binary data.
+
+For example:
+
+<pre>
+b""                           # empty binary data
+b10"!@#$%^&*()"               # byte[10] { '!', '@', '#', '$', '%', '^', '&', '*', '(', ')' }
+</pre>
+
+==String==
+
+String type represents unicode character string or array encoded in UTF8.
+
+The max length of string is 2147483647. The length is the number of neither bytes nor unicode codepoints. It is the number of 16-bit unicode characters.
+
+The string <code>str</code> (assuming its length is <code>len</code>) is represented like this:
+
+<pre>
+s<len>"<str>"
+</pre>
+
+The tag <code>s</code> represents the beginning of string. If <code><len></code> is 0, <code><len></code> can be omitted. <code><str></code> is the utf8 encode string. The tag <code>"</code> is used to represent the beginning and the end of the string.
+
+For example:
+
+<pre>
+s""                           # empty string
+s12"Hello world!"             # string 'Hello world!'
+s2"你好"                      # string '你好'
+</pre>
+
+==GUID==
+
+GUID is short for Globally Unique Identifier. It corresponds to GUID or UUID in the programming language.
+
+GUID is a 128-bit value. it is represented like this:
+
+<pre>
+g{<GUID>}
+</pre>
+
+The tag <code>g</code> represents the beginning of GUID. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the GUID. <code><GUID></code> is a string formatted as 32 hexadecimal digits with groups separated by hyphens, such as AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6.
+
+For example:
+
+<pre>
+g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}              # GUID 'AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6'
+</pre>
+
+GUID string is case-insensitive.
+
+==List==
+
+List is a recursive reference type. It corresponds to array, list, set or collection in the programming language.
+
+It can contain 0 or more elements. the element can be any valid type in hprose.
+
+The max count of list elements is 2147483647.
+
+The list with n elements is represented like this:
+
+<pre>
+a<n>{<element_1><element_2><element_3>...<element_n>}
+</pre>
+
+The tag <code>a</code> represents the beginning of list. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the list. <code><element_i></code> is serialized data for every element. There is no delimiter between elements, because the serialized data is self-describe.
+
+For example:
+
+<pre>
+a{}                                                       # 0 element array
+a10{0123456789}                                           # int[10] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+a7{s3"Mon"s3"Tue"s3"Wed"s3"Thu"s3"Fri"s3"Sat"s3"Sun"}     # string[7] {'Mon, 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'}
+a3{a3{123}a3{456}a3{789}}                                 # int[][] { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} }
+</pre>
+
+==Map==
+
+Map is another recursive reference type. It corresponds to map, hashtable, dictionary or dynamic object in the programming language.
+
+It can contain 0 or more key-value pairs. The key and the value can be any valid type in hprose.
+
+The max count of map key-value pairs is 2147483647.
+
+The map with n key-value pairs is represented like this:
+
+<pre>
+m<n>{<key_1><value_1><key_2><value_2>...<key_n><value_n>}
+</pre>
+
+The tag <code>m</code> represents the beginning of map. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the map. <code><key_i></code> is serialized data for every key, <code><value_i></code> is serialized data for every value. There is no delimiter between key, value and key-value pairs, because the serialized data is self-describe.
+
+For example:
+
+<pre>
+m{}                                                       # 0 key-value pairs map
+m2{s4"name"s5"Tommy"s3"age"i24;}                          # {
+                                                          #     "name": "Tommy",
+                                                          #     "age" : 24
+                                                          # }
+</pre>
+
+==Object==
+
+Object is similar to the map, but the key of the object must be a string, and the object has a fixed structure. Here, this fixed structure is called class. The class corresponds to struct, class or object prototype in the programming language.
+
+The object serialization is more complex than the map. It is separated into two parts:
+
+# Class serialization
+# Object instance serialization
+
+Class serialization includes the type name, the count of fields/properties, and the field/property names. The class is only serialized once. Following objects only need to serialize their values.
+
+Every class has an integer reference, which is referenced by object instances serialization.
+
+The class integer reference starts from 0. It means that, if there are some different objects belong to some different classes, when serializing the classes, the first serialized class is 0, the second serialized class is 1, and so on.
+
+The form of class serialization is below:
+
+<pre>
+c<type_name_length>"<type_name_string>"<field_count>{<field_1_name><field_2_name>...<field_n_name>}
+</pre>
+
+The form of object instance serialization is below:
+
+<pre>
+o<class_integer_reference>{<field_1_value><field_2_value>...<field_n_value>}
+</pre>
+
+For example:
+
+<pre>
+class Person {
+    String name;
+    int age;
+}
+
+Person[] users = new Person[2];
+
+users[0] = new Person("Tommy", 24);
+users[1] = new Person("Jerry", 19);
+</pre>
+
+The serialization data for users is:
+
+<pre>
+a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
+</pre>
+
+==Ref==
+
+We know that JSON is a lightweight data format. But JSON can't represent the following data:
+
+<pre>
+var list = [];
+list[0] = list;
+</pre>
+
+Because JSON does not support ref. But hprose can serialize it like this:
+
+<pre>
+a1{r0;}
+</pre>
+
+Every reference type data has an integer reference, it is independent of class integer references.
+
+The integer reference of reference data starts from 0. When the same data is serialized again, it will be serialized as a ref. 
+
+But note that the ref itself does not have the integer reference.
+
+The ref data is represented like this:
+
+<pre>
+r<integer_reference>;
+</pre>
+
+The tag <code>r</code> represents the beginning of the ref. and the tag <code>;</code> represents the end of the ref.
+
+For example:
+
+<pre>
+var list = [
+    {
+        "name": "Tommy",
+        "age" : 24 
+    },
+    {
+        "name": "Jerry",
+        "age" : 18 
+    }
+];
+</pre>
+
+The serialization data for list is:
+
+<pre>
+a2{m2{s4"name"s5"Tommy"s3"age"i24;}m2{r2;s5"Jerry"r4;i18;}}
+</pre>
+
+Another example:
+
+<pre>
+var a = [];
+var b = [];
+a[0] = a;
+a[1] = b;
+b[0] = a;
+b[1] = b;
+var c = [a,b];
+</pre>
+
+The serialization data for c is:
+
+<pre>
+a2{a2{r1;a2{r1;r2;}}r2;}
+</pre>
+
+=RPC Protocol=
+
+Hprose RPC protocol supports multicall, passing arguments by reference and synchronous and asynchronous communication.
+
+Hprose RPC communication can use any underlying network protocol for transport such as HTTP or TCP.
+
+Hprose RPC protocol is very simple. It consists of a few paragraphs data. Each piece of data contains at least 1 octet tag. The following are hprose RPC protocol tags:
+
+* 0x46('F'): Function List
+* 0x43('C'): RPC Call
+* 0x52('R'): RPC Result
+* 0x41('A'): RPC Arguments
+* 0x45('E'): RPC Error
+* 0x7A('z'): End
+
+==Function List==
+
+The RPC server can publish one or more functions/methods. Each function/method has a name. The name is expressed as a string. The function list is a list of the function/method names.
+
+If the client-side only send the End tag 'z' without other data to the server. The server-side should return the function list.
+
+Hprose RPC protocol is dynamic and weakly typed. It supports dynamic type arguments, variable-length arguments function/method. So the function list only a function/method name list, it has no argument information.
+
+For example, if the server side published two functions, one is 'hello', the other is 'MD5', The function list should return the form below:
+
+<pre>
+Fa2{s5"hello"s3"MD5"}z
+</pre>
+
+Hprose RPC server supports publishing missing functions/methods. It means that if a function/method the client-side invoked is not existed in the server-side, it can be processed by a unified handler. If the server-side set up such a unified handler. The function list should have a '*' item to represent it. 
+
+For example:
+
+<pre>
+Fa1{s1"*"}z
+</pre>
+
+The named functions/methods and the missing functions/methods unified handler can be published together.
+
+For example:
+
+<pre>
+Fa3{s1"*"s5"hello"s3"MD5"}z
+</pre>
+
+Hprose client can ignore its implementation, but the server-side must implement it.
+
+==RPC Call==
+
+RPC call launches by the client-side, for example:
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
+</pre>
+
+You can pass zero or more arguments, for example:
+
+<pre>
+Cs3"sum"a3{012}z                    # result = client.sum(0, 1, 2);
+</pre>
+
+If there is no argument, the argument list can be ignored, for example:
+
+<pre>
+Cs9"deleteAll"z                    # client.deleteAll();
+</pre>
+
+you can pass arguments by reference, for example:
+
+<pre>
+Cs4"sort"a1{a10{2465318790}}tz     # void Sort(ref int[] a);  // defined in server
+                                   # int[] a = new int[] {2, 4, 6, 5, 3, 1, 8, 7, 9, 0};
+                                   # client.sort(ref a);
+</pre>
+
+The function/method name published by hprose is case-insensitive. such as the above example, the function/method name defined in server-side is "Sort", but in client-side, it can use 'sort', 'Sort' or 'SORT' to invoke it, it's no problem.
+
+After tag 'C', tag 's' represents name string, tag 'a' represents argument list, tag 't' represents passing arguments by reference. DO NOT use tag 'f' represents passing arguments by value, because this is the default behavior. tag 'z' represents 
+the end of call.
+
+The function/method name and argument list are independent object serialization. So they have the independent integer reference.
+
+Hprose supports multicall, for example:
+
+<pre>
+Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client.beginBatch();
+                                                   # client.hello("world");
+                                                   # client.sum(0, 1, 2);
+                                                   # results = client.endBatch();
+</pre>
+
+Multicall is an optional feature of hprose client, the client does not have to implement it.
+
+==RPC Reply==
+
+RPC reply returns from the server-side, for example:
+
+<pre>
+string hello(string str) {
+    return "Hello " + str + "!";
+}
+
+int sum(int a, int b, int c) {
+    return a + b + c;
+}
+</pre>
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # client call
+
+Rs12"Hello world!"z                 # server reply
+
+Cs3"sum"a3{012}z                    # client call
+
+R3z                                 # server reply
+</pre>
+
+The return value can be any type supported by hprose.
+
+If published function/method has no return value, the return value is Null.
+
+After return value is the returned argument list if the arguments passed by reference, for example:
+
+<pre>
+void Sort(ref int[] a) {
+    Array.Sort(a);
+}
+</pre>
+
+<pre>
+Cs4"sort"a1{a10{2465318790}}tz      # client call
+
+RnAa1{a10{0123456789}}z             # server reply
+</pre>
+
+After tag 'R' is the serialized result, After tag 'A' is the serialized argument list. At the reply end is the tag 'z'.
+
+The function/method result and argument list are independent object serialization. So they have the independent integer reference.
+
+In the above example, the argument of server-side function do not need to be defined as ref argument. In fact, the Array.Sort can be published directly. However, this is about the protocol implementation, we do not do more discussion here.
+
+For multicall reply, here is the example:
+
+<pre>
+Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client multicall
+
+Rs12"Hello world!"R3z                              # server reply
+</pre>
+
+==RPC Error==
+
+If there is a error occurs during the execution of the remote function/method, hprose server should return the error message in the form below:
+
+<pre>
+E<error_message>z
+</pre>
+
+<code><error_message></code> is the serialized error message string, for example:
+
+<pre>
+void errorExample() {
+    throw new Exception("This is a error example.");
+}
+</pre>
+
+<pre>
+Cs12"errorExample"z               # client call
+
+Es24"This is a error example."z    # server reply
+</pre>
+
+If a error occurs during a multicall, the multicall should be interrupted. for example:
+
+<pre>
+Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # client multicall
+
+Rs12"Hello world!"Es24"This is a error example."z                     # server reply
+</pre>
+
+=Formal Definitions=
+
+[http://tools.ietf.org/html/rfc4234 ABNF]:
+<pre>
+
+serialize-data = integer / long / double / nan / positive-infinity / negative-infinity /
+                 true / false / null / empty / utf8-char / bytes / string / datetime / guid /
+                 list / map / object / ref
+
+UINT = "0" / %x31-39 *DIGIT
+
+SINT = *("+" / "-") UINT
+
+integer = DIGIT / %x69 SINT ";"
+
+long = %x6C SINT ";"
+
+double = %x64 SINT ["." 1*DIGIT ["E" SINT]] ";"
+
+nan = %x4E
+
+positive-infinity = %x49 "+"
+
+negative-infinity = %x49 "-"
+
+true = %x74
+
+false = %x66
+
+null = %x6E
+
+empty = %x65
+
+one-byte-utf8 = %x00-7F
+
+two-byte-utf8 = %xC0-DF %x80-BF
+
+three-byte-utf8 = %xE0-EF %x80-BF %x80-BF
+
+four-byte-utf8 = %xF0-F7 %x80-BF %x80-BF %x80-BF
+
+utf8 = one-byte-utf8 / two-byte-utf8 / three-byte-utf8 / four-byte-utf8
+
+utf8-char = %x75 (one-byte-utf8 / two-byte-utf8 / three-byte-utf8)
+
+bytes-length = UINT
+
+bytes = %x62 DQUOTE DQUOTE / %x62 bytes-length DQUOTE <bytes-length>OCTET DQUOTE
+
+string-length = UINT
+
+string = %x73 DQUOTE DQUOTE / %x73 string-length DQUOTE <string-length>utf8 DQUOTE
+
+year = 4DIGIT
+
+month = "0" %x31-39 / "1" %x30-32
+
+day = "0" %x31-39 / %x31-32 %x30-39 / "3" %x30-31
+
+local = ";"
+
+utc = %x5A
+
+timezone = local / utc
+
+date = %x44 year month day timezone
+
+hour = %x30-31 DIGIT / "2" %x30-x33
+
+minute = %x30-35 DIGIT
+
+second = %x30-35 DIGIT
+
+millisecond = 3DIGIT
+
+microsecond = 6DIGIT
+
+nanosecond = 9DIGIT
+
+time = %x54 hour minute second ["." (millisecond / microsecond / nanosecond)] timezone
+
+datetime = date / time / %x44 year month day time
+
+guid = %x67 "{" 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG "}"
+
+element = serialize-data
+
+list-count = UINT
+
+list = %x61 "{" "}" / %x61 list-count "{" <list-count>element "}"
+
+key = serialize-data
+
+value = serialize-data
+
+keyvalue = key value
+
+map-count = UINT
+
+map = %x6D "{" "}" / %x6D map-count "{" <map-count>keyvalue "}"
+
+classname-length = UINT
+
+classname = classname-length DQUOTE <classname-length>utf8 DQUOTE
+
+fieldname = string
+
+field-count = UINT
+
+class = %x63 classname field-count "{" <field-count>fieldname "}"
+
+class-ref = UINT
+
+fieldvalue = serialize-data
+
+object = [class] %x6F class-ref "{" <field-count>fieldvalue "}"
+
+ref = %x72 UINT ";"
+
+string-list = %x61 list-count "{" <list-count>string "}"
+
+end = %x7A
+
+function-list = %x46 string-list end
+
+function-name = string
+
+function-arguments = list
+
+passing-by-ref = true
+
+rpc-call = 1*(%x43 function-name [[function-arguments] passing-by-ref]) end
+
+rpc-result = %x52 serialize-data
+
+rpc-arguments = %x41 list
+
+rpc-error = %x45 string
+
+rpc-reply = rpc-error end / 1*(rpc-result [rpc-arguments]) [rpc-error] end
+
+</pre>
+
+=Authors Information=
+
+ 	Ma Bingyao <mabingyao@gmail.com>
+
+=Copyright and Licensing=
+
+© Copyright 2008-2014 Hprose.com. All Rights Reserved.
+
+Any party may implement this protocol for any purpose under the terms of the MIT License, provided that the implementation conforms to this specification. 
+
+This document and translations of it may be copied and furnished to others, and derivative works that comment on or otherwise explain it or assist in its implementation may be prepared, copied, published and distributed, in whole or in part, without restriction of any kind, provided that the above copyright notice and these paragraphs are included on all such copies and derivative works.
+
+THIS DOCUMENT AND THE INFORMATION CONTAINED HEREIN IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
