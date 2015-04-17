@@ -619,7 +619,7 @@ This head is designed to deal with the packets of socket data quickly and easily
 
 Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket.
 
-Hprose RPC add 4 bytes head as request id, the server don't care the id encoding, only need to repeat it in the response.
+Hprose RPC add 4 bytes head as request id, the server don't need to care the request id encoding, only need to repeat it in the response.
 
 for example:
 
@@ -633,8 +633,7 @@ for example:
 <0x00,0x00,0x00,0x01>R3z                                 # server reply
 </pre>
 
-<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> is the request id. The client use it to deal with the response message.
-
+<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> is the request id. The client use it to deal with the relationship of the request and response.
 
 No other special requirements.
 
