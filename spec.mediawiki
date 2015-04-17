@@ -617,7 +617,26 @@ This head is designed to deal with the packets of socket data quickly and easily
 
 == WebSocket Binding ==
 
-Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket, and no other special requirements.
+Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket.
+
+Hprose RPC add 4 bytes head as request id, the server don't care the id encoding, only need to repeat it in the response.
+
+for example:
+
+<pre>
+<0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # client call
+
+<0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # server reply
+
+<0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # client call
+
+<0x00,0x00,0x00,0x01>R3z                                 # server reply
+</pre>
+
+<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> is the request id. The client use it to deal with the response message.
+
+
+No other special requirements.
 
 =Formal Definitions=
 
