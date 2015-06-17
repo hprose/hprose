@@ -601,9 +601,9 @@ When hprose RPC works on HTTP, the hprose RPC data is sended as the body of the 
 
 Hprose RPC has no special requirements on HTTP head.
 
-== Socket Binding ==
+== Half Duplex Socket Binding ==
 
-Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC data is send as the head in 4 bytes big endian encoding, The hprose data is send as the body without encoding. for example:
+Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC data is send as the head in 4 bytes big endian encoding. The hprose data is send as the body without encoding. For example:
 
 <pre>
 <0x00,0x00,0x00,0x18>Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
@@ -611,9 +611,27 @@ Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC dat
 
 <0x00,0x00,0x00,0x18> means 4 bytes big endian encoding of integer 24.
 
-The response format is also like this.
+The response format is also like this. The top bit of the first byte is always `0`, it means the max length of the body is 2<sup>31</sup> - 1.
 
 This head is designed to deal with the packets of socket data quickly and easily.
+
+== Full Duplex Socket Binding ==
+
+Half Duplex Socket Binding is easy to implement, but the availability of the connections are not very high. So we support a Full Duplex Socket Binding, too. The length of the hprose RPC data is also send as the head in 4 bytes big endian encoding, but the top bit of the first byte is always `1`. This bit is not the sign of the length, because the length is always a positive integer, it is only for a half duplex or full duplex. and then followed 4 bytes as the request id. This 8 bytes is the head. The hprose data is send as the body without encoding. for example:
+
+<pre>
+<0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # client call
+
+<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # server reply
+
+<0x80,0x00,0x00,0x10><0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # client call
+
+<0x80,0x00,0x00,0x03><0x00,0x00,0x00,0x01>R3z                                 # server reply
+</pre>
+
+<0x80,0x00,0x00,0x18> means 4 bytes big endian encoding of integer 24.
+
+<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> are the request ids. The client use it to deal with the relationship of the request and response.
 
 == WebSocket Binding ==
 
@@ -633,7 +651,7 @@ for example:
 <0x00,0x00,0x00,0x01>R3z                                 # server reply
 </pre>
 
-<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> is the request id. The client use it to deal with the relationship of the request and response.
+<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> are the request ids. The client use it to deal with the relationship of the request and response.
 
 No other special requirements.
 
