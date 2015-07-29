@@ -238,7 +238,7 @@ GUID 是一个 128 位的值。它表示为如下形式：
 g{<GUID>}
 </pre>
 
-标记 <code>g</code> 表示 GUID 的开始。标记 <code>{</code><code>}</code> 用来表示 GUID 数据的开始和结束。<code><GUID></code> 是一个格式化为 32 个十六进制数并通过连字符（-）按组分隔的字符串，比如：AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6。
+标记 <code>g</code> 表示 GUID 的开始。标记 <code>{</code><code>}</code> 用来表示 GUID 数据的开始和结束。<code><GUID></code> 是一个格式化为 32 个十六进制数字并通过连字符（-）按组分隔的字符串，比如：AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6。
 
 例如：
 
@@ -250,24 +250,24 @@ GUID 字符串是不区分大小写的。
 
 ==List==
 
-List is a recursive reference type. It corresponds to array, list, set or collection in the programming language.
+List 是一个可递归引用类型。它相当于编程语言中的数组（array），列表（list），集合（set）或容器（collection）类型。
 
-It can contain 0 or more elements. the element can be any valid type in hprose.
+它可以包含 0 个或多个元素。元素可以为 hprose 中任意有效的类型。
 
-The max count of list elements is 2147483647.
+List 元素的最大数目为 2147483647。
 
-The list with n elements is represented like this:
+具有 <code>n</code> 个元素的 List 被表示为如下形式：
 
 <pre>
-a<n>{<element_1><element_2><element_3>...<element_n>}
+a<n>{<元素_1><元素_2><元素_3>...<元素_n>}
 </pre>
 
-The tag <code>a</code> represents the beginning of list. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the list. <code><element_i></code> is serialized data for every element. There is no delimiter between elements, because the serialized data is self-describe.
+标记 <code>a</code> 表示 List 的开始。如果 <code><n></code> 为 0，<code><n></code> 可以被省略。标记 <code>{</code><code>}</code> 被用来表示 List 数据的开始和结束。<code><元素_i></code> 是每个元素序列化后的数据。元素之间没有其它任何分隔符，因为序列化数据是自描述的。
 
-For example:
+例如：
 
 <pre>
-a{}                                                       # 0 element array
+a{}                                                       # 0 个元素的数组
 a10{0123456789}                                           # int[10] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 a7{s3"Mon"s3"Tue"s3"Wed"s3"Thu"s3"Fri"s3"Sat"s3"Sun"}     # string[7] {'Mon, 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'}
 a3{a3{123}a3{456}a3{789}}                                 # int[][] { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} }
@@ -275,24 +275,24 @@ a3{a3{123}a3{456}a3{789}}                                 # int[][] { {1, 2, 3},
 
 ==Map==
 
-Map is another recursive reference type. It corresponds to map, hashtable, dictionary or dynamic object in the programming language.
+Map 是另一种可递归引用类型。它相当于编程语言中的表（map），哈希表（hashtable），字典（dictionary）或动态对象类型。
 
-It can contain 0 or more key-value pairs. The key and the value can be any valid type in hprose.
+它可以包含 0 个或多个键值对。键（key）或值（value）可以为 hprose 中任意有效的类型。
 
-The max count of map key-value pairs is 2147483647.
+Map 中键值对的最大数目为 2147483647。
 
-The map with n key-value pairs is represented like this:
+包含有 <code>n</code> 个键值对的 Map 表示为如下形式：
 
 <pre>
 m<n>{<key_1><value_1><key_2><value_2>...<key_n><value_n>}
 </pre>
 
-The tag <code>m</code> represents the beginning of map. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the map. <code><key_i></code> is serialized data for every key, <code><value_i></code> is serialized data for every value. There is no delimiter between key, value and key-value pairs, because the serialized data is self-describe.
+标记 <code>m</code> 表示 Map 的开始。如果 <code><n></code> 为 0，<code><n></code> 可以被省略。标记 <code>{</code><code>}</code> 被用来表示 Map 数据的开始和结束。<code><key_i></code> 是每个键（key）序列化后的数据。<code><value_i></code> 是每个值（value）序列化后的数据。键（key）、值（value）和键值对之间没有其它任何分隔符，因为序列化数据是自描述的。
 
-For example:
+例如：
 
 <pre>
-m{}                                                       # 0 key-value pairs map
+m{}                                                       # 0 个键值对的 Map
 m2{s4"name"s5"Tommy"s3"age"i24;}                          # {
                                                           #     "name": "Tommy",
                                                           #     "age" : 24
@@ -301,32 +301,32 @@ m2{s4"name"s5"Tommy"s3"age"i24;}                          # {
 
 ==Object==
 
-Object is similar to the map, but the key of the object must be a string, and the object has a fixed structure. Here, this fixed structure is called class. The class corresponds to struct, class or object prototype in the programming language.
+Object 与 Map 类似，但是 Object 的键必须为字符串，并且 Object 具有一个固定的结构。在这里，我们将这个固定的结构称为类（Class）。这里的类（Class）相当于编程语言中的结构体（struct），类（class），或对象原型（object prototype）。
 
-The object serialization is more complex than the map. It is separated into two parts:
+Object 的序列化格式比 Map 要复杂的多。它被分为两个部分：
 
-# Class serialization
-# Object instance serialization
+# 类（Class）的序列化
+# 对象实例（Object instance）的序列化
 
-Class serialization includes the type name, the count of fields/properties, and the field/property names. The class is only serialized once. Following objects only need to serialize their values.
+类（Class）的序列化包括类型名称，字段/属性个数，字段/属性名称。类（Class）的序列化只进行一次。后面的对象只需要序列化它们的数据值。
 
-Every class has an integer reference, which is referenced by object instances serialization.
+每个类拥有一个整数引用编号，它将被对象实例的序列化所引用。
 
-The class integer reference starts from 0. It means that, if there are some different objects belong to some different classes, when serializing the classes, the first serialized class is 0, the second serialized class is 1, and so on.
+类的整数引用编号从 0 开始。它表示：如果有许多不同的对象属于不同的类，那么当序列化类时，第一个序列化的类编号为 0，第二个序列化的类的编号为 1，以此类推。
 
-The form of class serialization is below:
-
-<pre>
-c<type_name_length>"<type_name_string>"<field_count>{<field_1_name><field_2_name>...<field_n_name>}
-</pre>
-
-The form of object instance serialization is below:
+类的序列化格式如下：
 
 <pre>
-o<class_integer_reference>{<field_1_value><field_2_value>...<field_n_value>}
+c<类型名称长度>"<类型名称的字符串>"<字段数目>{<字段 1 的名称><字段 2 的名称>...<字段 n 的名称>}
 </pre>
 
-For example:
+对象实例序列化的格式如下：
+
+<pre>
+o<类的整数引用编号>{<字段 1 的值><字段 2 的值>...<字段 n 的值>}
+</pre>
+
+例如：
 
 <pre>
 class Person {
@@ -340,7 +340,7 @@ users[0] = new Person("Tommy", 24);
 users[1] = new Person("Jerry", 19);
 </pre>
 
-The serialization data for users is:
+users 的序列化数据为：
 
 <pre>
 a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
@@ -348,34 +348,34 @@ a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
 
 ==Ref==
 
-We know that JSON is a lightweight data format. But JSON can't represent the following data:
+我们知道 JSON 是一个轻量级的数据格式。但是 JSON 不能表示下面的数据：
 
 <pre>
 var list = [];
 list[0] = list;
 </pre>
 
-Because JSON does not support ref. But hprose can serialize it like this:
+因为 JSON 不支持引用。但是 hprose 可以将其序列化为：
 
 <pre>
 a1{r0;}
 </pre>
 
-Every reference type data has an integer reference, it is independent of class integer references.
+每个引用类型的数据拥有一个整数引用编号，但它与类的整数引用编号是相互独立的。
 
-The integer reference of reference data starts from 0. When the same data is serialized again, it will be serialized as a ref. 
+引用类型数据的整数引用编号从 0 开始。当相同的数据被再次序列化时，它将被序列化为一个引用。
 
-But note that the ref itself does not have the integer reference.
+但是请注意，引用本身不具有整数引用编号。
 
-The ref data is represented like this:
+引用数据表示为以下形式：
 
 <pre>
-r<integer_reference>;
+r<整数引用编号>;
 </pre>
 
-The tag <code>r</code> represents the beginning of the ref. and the tag <code>;</code> represents the end of the ref.
+标记 <code>r</code> 表示引用的开始。标记 <code>;</code> 表示引用的结束。
 
-For example:
+例如：
 
 <pre>
 var list = [
@@ -390,13 +390,13 @@ var list = [
 ];
 </pre>
 
-The serialization data for list is:
+list 的序列化数据为：
 
 <pre>
 a2{m2{s4"name"s5"Tommy"s3"age"i24;}m2{r2;s5"Jerry"r4;i18;}}
 </pre>
 
-Another example:
+再举一例：
 
 <pre>
 var a = [];
@@ -408,26 +408,26 @@ b[1] = b;
 var c = [a,b];
 </pre>
 
-The serialization data for c is:
+c 的序列化数据为：
 
 <pre>
 a2{a2{r1;a2{r1;r2;}}r2;}
 </pre>
 
-=RPC Protocol=
+=RPC 协议=
 
-Hprose RPC protocol supports multicall, passing arguments by reference and synchronous and asynchronous communication.
+Hprose 远程过程调用（RPC）协议支持批量调用，引用参数传递，同步和异步通讯。
 
-Hprose RPC protocol is very simple. It consists of a few paragraphs data. Each piece of data contains at least 1 octet tag. The following are hprose RPC protocol tags:
+Hprose 远程过程调用（RPC）协议非常简单。它由几段数据组成。每段数据包括至少一个字节的标记。下面是Hprose 远程过程调用（RPC）协议的标记列表：
 
-* 0x46('F'): Function List
-* 0x43('C'): RPC Call
-* 0x52('R'): RPC Result
-* 0x41('A'): RPC Arguments
-* 0x45('E'): RPC Error
-* 0x7A('z'): End
+* 0x46('F'): 函数列表
+* 0x43('C'): RPC 调用
+* 0x52('R'): RPC 结果
+* 0x41('A'): RPC 参数
+* 0x45('E'): RPC 错误
+* 0x7A('z'): 结束
 
-==Function List==
+==函数列表==
 
 The RPC server can publish one or more functions/methods. Each function/method has a name. The name is expressed as a string. The function list is a list of the function/method names.
 
