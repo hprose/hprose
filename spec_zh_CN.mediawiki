@@ -504,9 +504,9 @@ Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client.beginBatch();
 
 批量调用是 hprose 客户端的可选特征，客户端可以不必实现的。
 
-==RPC 响应==
+==RPC 应答==
 
-RPC 响应由服务器端返回，例如：
+RPC 应答由服务器端返回，例如：
 
 <pre>
 string hello(string str) {
@@ -519,13 +519,13 @@ int sum(int a, int b, int c) {
 </pre>
 
 <pre>
-Cs5"hello"a1{s5"world"}z            # client call
+Cs5"hello"a1{s5"world"}z            # 客户端调用
 
-Rs12"Hello world!"z                 # server reply
+Rs12"Hello world!"z                 # 服务器端应答
 
-Cs3"sum"a3{012}z                    # client call
+Cs3"sum"a3{012}z                    # 客户端调用
 
-R3z                                 # server reply
+R3z                                 # 服务器端应答
 </pre>
 
 返回值可以是 hprose 支持的任意类型。
@@ -543,21 +543,21 @@ void Sort(ref int[] a) {
 <pre>
 Cs4"sort"a1{a10{2465318790}}tz      # 客户端调用
 
-RnAa1{a10{0123456789}}z             # 服务器端响应
+RnAa1{a10{0123456789}}z             # 服务器端应答
 </pre>
 
-在标记 'R' 之后的是序列化的结果。在标记 'A' 之后的是序列化的参数列表。在响应的末尾是标记 'z'。
+在标记 'R' 之后的是序列化的结果。在标记 'A' 之后的是序列化的参数列表。在应答的末尾是标记 'z'。
 
 函数/方法的结果和参数列表也是独立的对象序列化，所以它们也是具有各自独立的整数引用编号。
 
 在上面的例子中，服务器端函数的参数其实无需定义成 ref 参数。事实上，Array.Sort 可以直接发布。当然，这涉及到协议的实现，这里我们不过多的讨论它。
 
-对于批量调用的响应，这里有个例子：
+对于批量调用的应答，这里有个例子：
 
 <pre>
 Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # 客户端批量调用
 
-Rs12"Hello world!"R3z                              # 服务器端响应
+Rs12"Hello world!"R3z                              # 服务器端应答
 </pre>
 
 ==RPC 错误==
@@ -579,7 +579,7 @@ void errorExample() {
 <pre>
 Cs12"errorExample"z               # 客户端调用
 
-Es24"This is a error example."z   # 服务器端响应
+Es24"This is a error example."z   # 服务器端应答
 </pre>
 
 如果在批处理调用中发生错误，批处理调用可以被中断。例如：
@@ -587,7 +587,7 @@ Es24"This is a error example."z   # 服务器端响应
 <pre>
 Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # 客户端批处理调用
 
-Rs12"Hello world!"Es24"This is a error example."z                    # 服务器端响应
+Rs12"Hello world!"Es24"This is a error example."z                    # 服务器端应答
 </pre>
 
 也可以不被中断，例如：
@@ -595,7 +595,7 @@ Rs12"Hello world!"Es24"This is a error example."z                    # 服务器
 <pre>
 Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # 客户端批处理调用
 
-Rs12"Hello world!"Es24"This is a error example."R3z                  # 服务器端响应
+Rs12"Hello world!"Es24"This is a error example."R3z                  # 服务器端应答
 </pre>
 
 
@@ -619,7 +619,7 @@ Hprose 远程过程调用（RPC）也可以工作于 TCP 或 UNIX 套接字（So
 
 <0x00,0x00,0x00,0x18> 表示 4 个字节的 BigEndian 编码的整数 24。
 
-响应格式同上类似。第一个字节的首位总是被设为 `0`，这意味着包体的最大长度为 2<sup>31</sup> - 1（2147483647）个字节。
+应答格式同上类似。第一个字节的首位总是被设为 `0`，这意味着包体的最大长度为 2<sup>31</sup> - 1（2147483647）个字节。
 
 这个包头设计是为了可以更快更方便的处理套接字数据报中的数据。
 
@@ -630,44 +630,48 @@ Hprose 远程过程调用（RPC）也可以工作于 TCP 或 UNIX 套接字（So
 <pre>
 <0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # 客户端请求
 
-<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # 服务器端响应
+<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # 服务器端应答
 
 <0x80,0x00,0x00,0x10><0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # 客户端请求
 
 <0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x02>Cs5"hello"a1{s5"world"}z            # 客户端请求
 
-<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x02>Rs12"Hello world!"z                 # 服务器端响应
+<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x02>Rs12"Hello world!"z                 # 服务器端应答
 
-<0x80,0x00,0x00,0x03><0x00,0x00,0x00,0x01>R3z                                 # 服务器端响应
+<0x80,0x00,0x00,0x03><0x00,0x00,0x00,0x01>R3z                                 # 服务器端应答
 </pre>
 
 <0x80,0x00,0x00,0x18> 表示 4 个字节的 BigEndian 编码的整数 24。
 
 <0x00,0x00,0x00,0x00>，<0x00,0x00,0x00,0x01>，<0x00,0x00,0x00,0x02> 是请求的唯一标识（id）。客户端使用它来处理请求和响应之间的对应关系。
 
-== WebSocket Binding ==
+== WebSocket 绑定 ==
 
-Hprose RPC can also work on websocket. The hprose RPC data is sended and received as binary data on websocket.
+Hprose 远程过程调用（RPC）也可以工作于 WebSocket 之上。 Hprose 远程过程调用（RPC）的数据以二进制数据的方式在 WebSocket 上发送和接收。
 
-Hprose RPC add 4 bytes head as request id, the server don't need to care the request id encoding, only need to repeat it in the response.
+Hprose 远程过程调用（RPC）添加了 4 个字节的头作为请求唯一标识（id），服务器端不需要关心请求唯一标识（id）如何编码，只需要在应答中重复它就可以了。
 
-for example:
+例如：
 
 <pre>
-<0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # client call
+<0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # 客户端调用
 
-<0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # server reply
+<0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # 服务器端应答
 
-<0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # client call
+<0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # 客户端调用
 
-<0x00,0x00,0x00,0x01>R3z                                 # server reply
+<0x00,0x00,0x00,0x02>Cs5"hello"a1{s5"world"}z            # 客户端调用
+
+<0x00,0x00,0x00,0x02>Rs12"Hello world!"z                 # 服务器端应答
+
+<0x00,0x00,0x00,0x01>R3z                                 # 服务器端应答
 </pre>
 
-<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> are the request ids. The client use it to deal with the relationship of the request and response.
+<0x00,0x00,0x00,0x00>, <0x00,0x00,0x00,0x01> 和  <0x00,0x00,0x00,0x02> 是请求唯一标识（id）。客户端使用它来处理请求和响应之间的对应关系。
 
-No other special requirements.
+再无其它特殊要求。
 
-=Formal Definitions=
+=形式化定义=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
 <pre>
@@ -810,11 +814,11 @@ rpc-reply = rpc-error end / 1*(rpc-result [rpc-arguments]) [rpc-error] end
 
 </pre>
 
-=Authors Information=
+=作者信息=
 
- 	Ma Bingyao <mabingyao@gmail.com>
+ 	马秉尧 <mabingyao@gmail.com>
 
-=Copyright and Licensing=
+=版权与许可=
 
 © Copyright 2008-2015 Hprose.com. All Rights Reserved.
 
