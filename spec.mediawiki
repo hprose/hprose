@@ -583,13 +583,22 @@ Cs12"errorExample"z               # client call
 Es24"This is a error example."z    # server reply
 </pre>
 
-If a error occurs during a multicall, the multicall should be interrupted. for example:
+If a error occurs during a multicall, the multicall can be interrupted. for example:
 
 <pre>
 Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # client multicall
 
-Rs12"Hello world!"Es24"This is a error example."z                     # server reply
+Rs12"Hello world!"Es24"This is a error example."z                    # server reply
 </pre>
+
+or not be interrupted. for example:
+
+<pre>
+Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # client multicall
+
+Rs12"Hello world!"Es24"This is a error example."R3z                  # server reply
+</pre>
+
 
 = Transmission Protocol Binding =
 
