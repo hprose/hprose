@@ -599,47 +599,51 @@ Rs12"Hello world!"Es24"This is a error example."R3z                  # 服务器
 </pre>
 
 
-= Transmission Protocol Binding =
+= 传输协议绑定 =
 
-Hprose RPC communication can use any underlying network protocol for transport, such as HTTP, TCP or UNIX socket.
+Hprose 远程过程调用（RPC）通讯可以在任何底层网络协议上传输。例如 HTTP，TCP 或 UNIX socket。
 
-== HTTP Binding ==
+== HTTP 绑定 ==
 
-When hprose RPC works on HTTP, the hprose RPC data is sended as the body of the POST request, and returned as the body in response.
+当 hprose 远程过程调用（RPC）工作于 HTTP 之上时，hprose 远程过程调用（RPC）的数据作为 POST 请求的 body 部分发送，以响应的 body 部分返回。
 
-Hprose RPC has no special requirements on HTTP head.
+Hprose 远程过程调用（RPC） 对 HTTP 的头部（head）没有任何特别的要求。
 
-== Half Duplex Socket Binding ==
+== 半双工套接字（Socket）绑定 ==
 
-Hprose RPC can also work on TCP or UNIX socket. The length of the hprose RPC data is send as the head in 4 bytes big endian encoding. The hprose data is send as the body without encoding. For example:
+Hprose 远程过程调用（RPC）也可以工作于 TCP 或 UNIX 套接字（Socket）之上。Hprose 远程过程调用（RPC）数据的长度以 BigEndian 的编码方式以 4 个字节的包头发送。Hprose 的数据作为包体部分直接发送，无需另外编码。例如：
 
 <pre>
 <0x00,0x00,0x00,0x18>Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
 </pre>
 
-<0x00,0x00,0x00,0x18> means 4 bytes big endian encoding of integer 24.
+<0x00,0x00,0x00,0x18> 表示 4 个字节的 BigEndian 编码的整数 24。
 
-The response format is also like this. The top bit of the first byte is always `0`, it means the max length of the body is 2<sup>31</sup> - 1.
+响应格式同上类似。第一个字节的首位总是被设为 `0`，这意味着包体的最大长度为 2<sup>31</sup> - 1（2147483647）个字节。
 
-This head is designed to deal with the packets of socket data quickly and easily.
+这个包头设计是为了可以更快更方便的处理套接字数据报中的数据。
 
-== Full Duplex Socket Binding ==
+== 全双工套接字（Socket）绑定 ==
 
-Half Duplex Socket Binding is easy to implement, but the availability of the connections are not very high. So we support a Full Duplex Socket Binding, too. The length of the hprose RPC data is also send as the head in 4 bytes big endian encoding, but the top bit of the first byte is always `1`. This bit is not the sign of the length, because the length is always a positive integer, it is only for a half duplex or full duplex. and then followed 4 bytes as the request id. This 8 bytes is the head. The hprose data is send as the body without encoding. for example:
+半双工套接字绑定易于实现，但是对连接的利用率不够高。所以我们也支持全双工套接字绑定方式。Hprose 远程过程调用（RPC）数据的长度仍以 BigEndian 的编码方式以 4 个字节的包头发送，但是第一个字节首位总是被设为 `1`。该位并不是长度的符号位，因为长度总是正整数，它仅用于区别半双工还是全双工。接下来的 4 个字节表示请求的唯一标识（id）。这 8 个字节是包头。Hprose 的数据作为包体部分直接发送，无需另外编码。例如：
 
 <pre>
-<0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # client call
+<0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x00>Cs5"hello"a1{s5"world"}z            # 客户端请求
 
-<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # server reply
+<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x00>Rs12"Hello world!"z                 # 服务器端响应
 
-<0x80,0x00,0x00,0x10><0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # client call
+<0x80,0x00,0x00,0x10><0x00,0x00,0x00,0x01>Cs3"sum"a3{012}z                    # 客户端请求
 
-<0x80,0x00,0x00,0x03><0x00,0x00,0x00,0x01>R3z                                 # server reply
+<0x80,0x00,0x00,0x18><0x00,0x00,0x00,0x02>Cs5"hello"a1{s5"world"}z            # 客户端请求
+
+<0x80,0x00,0x00,0x13><0x00,0x00,0x00,0x02>Rs12"Hello world!"z                 # 服务器端响应
+
+<0x80,0x00,0x00,0x03><0x00,0x00,0x00,0x01>R3z                                 # 服务器端响应
 </pre>
 
-<0x80,0x00,0x00,0x18> means 4 bytes big endian encoding of integer 24.
+<0x80,0x00,0x00,0x18> 表示 4 个字节的 BigEndian 编码的整数 24。
 
-<0x00,0x00,0x00,0x00> and <0x00,0x00,0x00,0x01> are the request ids. The client use it to deal with the relationship of the request and response.
+<0x00,0x00,0x00,0x00>，<0x00,0x00,0x00,0x01>，<0x00,0x00,0x00,0x02> 是请求的唯一标识（id）。客户端使用它来处理请求和响应之间的对应关系。
 
 == WebSocket Binding ==
 
