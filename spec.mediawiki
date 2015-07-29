@@ -131,7 +131,7 @@ f                        # false
 
 ==UTF8 char==
 
-Most languages have a unicode char type, such as Java, C#. UTF8 char is used to store this type data. So it can't stores all the unicode codepoint. If an unicode codepoint need 2 char to store, it will be serialized to a [[Hprose Specification#wiki-String|String]].
+Most languages have a unicode char type, such as Java, C#. UTF8 char is used to store this type data. So it can't stores all the unicode codepoint. If an unicode codepoint need 2 char to store, it will be serialized to a [[#String|String]].
 
 The char c is represented like this:
 <pre>
