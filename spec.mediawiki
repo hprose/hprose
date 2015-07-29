@@ -166,7 +166,7 @@ e                        # empty
 
 ==DateTime==
 
-DateTime is a reference type in hprose, although in some programming languages ​​may be a value type. This will not bring any problems. We will discuss the difference between reference types and value types in [[Hprose Specification#wiki-Ref|Ref section]].
+DateTime is a reference type in hprose, although in some programming languages ​​may be a value type. This will not bring any problems. We will discuss the difference between reference types and value types in [[#Ref|Ref]] section.
 
 DateTime type can represent local and utc time. The local time end with the tag <code>;</code>, and the utc time end with the tag <code>Z</code>.
 
