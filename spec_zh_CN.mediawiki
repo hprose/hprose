@@ -118,7 +118,7 @@ d-1.45E23;               # 浮点数 -1.45E23
 d3.76e-54;               # 浮点数 3.76e-54
 </pre>
 
-指数符号 <code>e</code> 是大小写无关的。
+指数符号 <code>e</code> 是不区分大小写的。
 
 ==Boolean==
 
@@ -230,23 +230,23 @@ s2"你好"                      # 字符串 '你好'
 
 ==GUID==
 
-GUID is short for Globally Unique Identifier. It corresponds to GUID or UUID in the programming language.
+GUID 是“全局唯一标识符”（Globally Unique Identifier）的缩写。它相当于编程语言中的 GUID 或 UUID 类型。
 
-GUID is a 128-bit value. it is represented like this:
+GUID 是一个 128 位的值。它表示为如下形式：
 
 <pre>
 g{<GUID>}
 </pre>
 
-The tag <code>g</code> represents the beginning of GUID. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the GUID. <code><GUID></code> is a string formatted as 32 hexadecimal digits with groups separated by hyphens, such as AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6.
+标记 <code>g</code> 表示 GUID 的开始。标记 <code>{</code><code>}</code> 用来表示 GUID 数据的开始和结束。<code><GUID></code> 是一个格式化为 32 个十六进制数并通过连字符（-）按组分隔的字符串，比如：AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6。
 
-For example:
+例如：
 
 <pre>
 g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}              # GUID 'AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6'
 </pre>
 
-GUID string is case-insensitive.
+GUID 字符串是不区分大小写的。
 
 ==List==
 
