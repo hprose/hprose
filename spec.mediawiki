@@ -19,26 +19,26 @@ The hprose protocol has the following design goals:
 
 Hprose serialization has 7 value types:
 
-# [[Hprose Specification#wiki-Integer|Integer]] (32-bit signed int)
-# [[Hprose Specification#wiki-Long|Long]] (unlimited long integer)
-# [[Hprose Specification#wiki-Double|Double]] (float, double or decimal)
-# [[Hprose Specification#wiki-Boolean|Boolean]]
-# [[Hprose Specification#wiki-UTF8_char|UTF8 char]] (16-bit unicode char, UTF8 format, 1-3 bytes)
-# [[Hprose Specification#wiki-Null|Null]]
-# [[Hprose Specification#wiki-Empty|Empty]] (empty string, empty binary data)
+# [[#Integer|Integer]] (32-bit signed int)
+# [[#Long|Long]] (unlimited long integer)
+# [[#Double|Double]] (float, double or decimal)
+# [[#Boolean|Boolean]]
+# [[#UTF8_char|UTF8 char]] (16-bit unicode char, UTF8 format, 1-3 bytes)
+# [[#Null|Null]]
+# [[#Empty|Empty]] (empty string, empty binary data)
 
 4 simple reference types:
 
-# [[Hprose Specification#wiki-DateTime|DateTime]]
-# [[Hprose Specification#wiki-Bytes|Bytes]]
-# [[Hprose Specification#wiki-String|String]]
-# [[Hprose Specification#wiki-GUID|GUID]]
+# [[#DateTime|DateTime]]
+# [[#Bytes|Bytes]]
+# [[#String|String]]
+# [[#GUID|GUID]]
 
 and 3 recursive reference types:
 
-# [[Hprose Specification#wiki-List|List]]
-# [[Hprose Specification#wiki-Map|Map]]
-# [[Hprose Specification#wiki-Object|Object]]
+# [[#List|List]]
+# [[#Map|Map]]
+# [[#Object|Object]]
 
 Each type is represented by one or more tags mixed data. Each tag is a octet. 
 
