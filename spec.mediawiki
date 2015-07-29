@@ -133,7 +133,7 @@ f                        # false
 
 Most languages have a unicode char type, such as Java, C#. UTF8 char is used to store this type data. So it can't stores all the unicode codepoint. If an unicode codepoint need 2 char to store, it will be serialized to a [[#String|String]].
 
-The char c is represented like this:
+The char <code><c></code> is represented like this:
 <pre>
 u<c>
 </pre>
@@ -150,7 +150,7 @@ u∞                       # '∞' is stored as 3 octets 0xE2 0x88 0x9E
 
 ==Null==
 
-Null represents a null pointer. The octet <code>'n'</code> represents the null value.
+Null represents a null pointer or null object. The octet <code>'n'</code> represents the null value.
 
 <pre>
 n                        # null
