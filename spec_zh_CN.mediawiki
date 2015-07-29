@@ -560,15 +560,15 @@ Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # 客户端批量调用
 Rs12"Hello world!"R3z                              # 服务器端响应
 </pre>
 
-==RPC Error==
+==RPC 错误==
 
-If there is a error occurs during the execution of the remote function/method, hprose server should return the error message in the form below:
+如果在远程函数/方法执行过程中发生错误，hprose 服务器应该以如下格式返回错误信息：
 
 <pre>
 E<error_message>z
 </pre>
 
-<code><error_message></code> is the serialized error message string, for example:
+<code><error_message></code> 是序列化的错误信息字符串。例如：
 
 <pre>
 void errorExample() {
@@ -577,18 +577,27 @@ void errorExample() {
 </pre>
 
 <pre>
-Cs12"errorExample"z               # client call
+Cs12"errorExample"z               # 客户端调用
 
-Es24"This is a error example."z    # server reply
+Es24"This is a error example."z   # 服务器端响应
 </pre>
 
-If a error occurs during a multicall, the multicall should be interrupted. for example:
+如果在批处理调用中发生错误，批处理调用可以被中断。例如：
 
 <pre>
-Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # client multicall
+Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # 客户端批处理调用
 
-Rs12"Hello world!"Es24"This is a error example."z                     # server reply
+Rs12"Hello world!"Es24"This is a error example."z                    # 服务器端响应
 </pre>
+
+也可以不被中断，例如：
+
+<pre>
+Cs5"hello"a1{s5"world"}Cs12"errorExample"Cs3"sum"a3{012}z            # 客户端批处理调用
+
+Rs12"Hello world!"Es24"This is a error example."R3z                  # 服务器端响应
+</pre>
+
 
 = Transmission Protocol Binding =
 
