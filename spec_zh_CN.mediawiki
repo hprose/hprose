@@ -166,7 +166,7 @@ e                        # empty
 
 ==DateTime==
 
-DateTime 在 hprose 是引用类型，尽管在某些语言中它可能是一个值类型。这并不会带来任何问题。我们将会在后面 [[#Ref|Ref]] 一节来讨论值类型和引用类型的区别。
+DateTime 在 hprose 是引用类型，尽管在某些语言中它可能是一个值类型。这并不会带来任何问题。我们将会在后面 [[#引用|引用]] 一节来讨论值类型和引用类型的区别。
 
 DateTime 可以表示本地或 UTC 时间。本地时间以标记 <code>;</code> 作为结尾，UTC 时间以标记 <code>Z</code> 作为结尾。
 
@@ -346,7 +346,7 @@ users 的序列化数据为：
 a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
 </pre>
 
-==Ref==
+==引用==
 
 我们知道 JSON 是一个轻量级的数据格式。但是 JSON 不能表示下面的数据：
 
@@ -429,57 +429,57 @@ Hprose 远程过程调用（RPC）协议非常简单。它由几段数据组成�
 
 ==函数列表==
 
-The RPC server can publish one or more functions/methods. Each function/method has a name. The name is expressed as a string. The function list is a list of the function/method names.
+远程过程调用（RPC）服务器可以发布一个或多个函数/方法。每个函数/方法拥有一个名字。函数/方法名以字符串的形式表示。函数列表是一个函数方法名的 List。
 
-If the client-side only send the End tag 'z' without other data to the server. The server-side should return the function list.
+如果客户端只发送一个结束标记 'z' 到服务器端，而没有其它数据。那么服务器端应该返回函数列表。
 
-Hprose RPC protocol is dynamic and weakly typed. It supports dynamic type arguments, variable-length arguments function/method. So the function list only a function/method name list, it has no argument information.
+Hprose 远程过程调用（RPC）协议是动态弱类型的。它支持动态类型参数，变长参数函数和方法。所以函数列表只是一个函数/方法名列表，而没有参数和结果的相关信息。
 
-For example, if the server side published two functions, one is 'hello', the other is 'MD5', The function list should return the form below:
+例如，如果服务器端发布了两个函数，一个是 'hello'，另一个是 'MD5'，那么函数列表应该以如下形式返回：
 
 <pre>
 Fa2{s5"hello"s3"MD5"}z
 </pre>
 
-Hprose RPC server supports publishing missing functions/methods. It means that if a function/method the client-side invoked is not existed in the server-side, it can be processed by a unified handler. If the server-side set up such a unified handler. The function list should have a '*' item to represent it. 
+Hprose 远程过程调用（RPC）服务器支持发布缺失的函数/方法。这表示如果客户端调用一个服务器端不存在的函数/方法，它可以被一个统一的处理器所处理。如果服务器端设置有这样的一个统一的处理器。那么函数列表中需要有一个 '*' 项来表示它。
 
-For example:
+例如：
 
 <pre>
 Fa1{s1"*"}z
 </pre>
 
-The named functions/methods and the missing functions/methods unified handler can be published together.
+函数/方法名和缺失函数/方法统一处理器可以被一起发布。
 
-For example:
+例如：
 
 <pre>
 Fa3{s1"*"s5"hello"s3"MD5"}z
 </pre>
 
-Hprose client can ignore its implementation, but the server-side must implement it.
+Hprose 客户端可以忽略该实现，但是服务器端必须实现它。
 
-==RPC Call==
+==RPC 调用==
 
-RPC call launches by the client-side, for example:
+RPC 调用由客户端发起，例如：
 
 <pre>
 Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
 </pre>
 
-You can pass zero or more arguments, for example:
+你可以传递 0 个或多个参数，例如：
 
 <pre>
 Cs3"sum"a3{012}z                    # result = client.sum(0, 1, 2);
 </pre>
 
-If there is no argument, the argument list can be ignored, for example:
+如果没有参数，参数列表可以省略，例如：
 
 <pre>
 Cs9"deleteAll"z                    # client.deleteAll();
 </pre>
 
-you can pass arguments by reference, for example:
+你可以进行引用参数传递，例如：
 
 <pre>
 Cs4"sort"a1{a10{2465318790}}tz     # void Sort(ref int[] a);  // defined in server
@@ -487,14 +487,13 @@ Cs4"sort"a1{a10{2465318790}}tz     # void Sort(ref int[] a);  // defined in serv
                                    # client.sort(ref a);
 </pre>
 
-The function/method name published by hprose is case-insensitive. such as the above example, the function/method name defined in server-side is "Sort", but in client-side, it can use 'sort', 'Sort' or 'SORT' to invoke it, it's no problem.
+hprose 发布的函数/方法名是不区分大小写的。例如上面的例子中，服务器端定义的函数/方法名是 "Sort"，但是在客户端，可以使用 'sort'，'Sort' 或 'SORT' 来调用它，这都没问题。
 
-After tag 'C', tag 's' represents name string, tag 'a' represents argument list, tag 't' represents passing arguments by reference. DO NOT use tag 'f' represents passing arguments by value, because this is the default behavior. tag 'z' represents 
-the end of call.
+在标记 'C' 之后，标记 's' 表示函数/方法名，标记 'a' 表示参数列表，标记 't' 表示引用参数传递。'''''不要'''''用标记 'f' 表示值参数传递，因为这是默认行为，服务器端不需要处理 'f' 标记。标记 'z' 表示调用结束。
 
-The function/method name and argument list are independent object serialization. So they have the independent integer reference.
+函数/方法名和参数列表是独立的对象序列化。因此它们具有独立的整数引用编号。
 
-Hprose supports multicall, for example:
+Hprose 支持批量调用，例如：
 
 <pre>
 Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client.beginBatch();
@@ -503,11 +502,11 @@ Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client.beginBatch();
                                                    # results = client.endBatch();
 </pre>
 
-Multicall is an optional feature of hprose client, the client does not have to implement it.
+批量调用是 hprose 客户端的可选特征，客户端可以不必实现的。
 
-==RPC Reply==
+==RPC 响应==
 
-RPC reply returns from the server-side, for example:
+RPC 响应由服务器端返回，例如：
 
 <pre>
 string hello(string str) {
@@ -529,11 +528,11 @@ Cs3"sum"a3{012}z                    # client call
 R3z                                 # server reply
 </pre>
 
-The return value can be any type supported by hprose.
+返回值可以是 hprose 支持的任意类型。
 
-If published function/method has no return value, the return value is Null.
+如果发布的函数/方法不具有返回值，则返回值为 Null。
 
-After return value is the returned argument list if the arguments passed by reference, for example:
+如果是引用参数传递的话，在返回值后面将紧跟着返回参数列表，例如：
 
 <pre>
 void Sort(ref int[] a) {
@@ -542,23 +541,23 @@ void Sort(ref int[] a) {
 </pre>
 
 <pre>
-Cs4"sort"a1{a10{2465318790}}tz      # client call
+Cs4"sort"a1{a10{2465318790}}tz      # 客户端调用
 
-RnAa1{a10{0123456789}}z             # server reply
+RnAa1{a10{0123456789}}z             # 服务器端响应
 </pre>
 
-After tag 'R' is the serialized result, After tag 'A' is the serialized argument list. At the reply end is the tag 'z'.
+在标记 'R' 之后的是序列化的结果。在标记 'A' 之后的是序列化的参数列表。在响应的末尾是标记 'z'。
 
-The function/method result and argument list are independent object serialization. So they have the independent integer reference.
+函数/方法的结果和参数列表也是独立的对象序列化，所以它们也是具有各自独立的整数引用编号。
 
-In the above example, the argument of server-side function do not need to be defined as ref argument. In fact, the Array.Sort can be published directly. However, this is about the protocol implementation, we do not do more discussion here.
+在上面的例子中，服务器端函数的参数其实无需定义成 ref 参数。事实上，Array.Sort 可以直接发布。当然，这涉及到协议的实现，这里我们不过多的讨论它。
 
-For multicall reply, here is the example:
+对于批量调用的响应，这里有个例子：
 
 <pre>
-Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # client multicall
+Cs5"hello"a1{s5"world"}Cs3"sum"a3{012}z            # 客户端批量调用
 
-Rs12"Hello world!"R3z                              # server reply
+Rs12"Hello world!"R3z                              # 服务器端响应
 </pre>
 
 ==RPC Error==
