@@ -131,26 +131,26 @@ f                        # false
 
 ==UTF8 char==
 
-大部分语言拥有一个 Unicode 字符类型。比如 Java 和 C#。UTF8 char 用于存储此种类型。所以你无法存储所有的 Unicode 代码点（codepoint）。如果一个 Unicode 代码点（codepoint）需要两个字符来存储。它将被序列化为一个 [[String|String]]。
+大部分语言拥有一个 Unicode 字符类型。比如 Java 和 C#。UTF8 char 用于存储此种类型。所以你无法存储所有的 Unicode 代码点（codepoint）。如果一个 Unicode 代码点（codepoint）需要两个字符来存储。它将被序列化为一个 [[#String|String]]。
 
-The char c is represented like this:
+字符 <code>c</code> 表示为如下形式：
 <pre>
 u<c>
 </pre>
 
-The tag <code>u</code> represents the beginning of the UTF8 char. There is no end tag, because UTF8 char is self-describe.
+标记 <code>u</code> 表示 UTF8 char 的开始。没有结束标记，因为 UTF8 char 是自描述的。
 
-<code><c></code> is the utf8 encode char. For example:
+<code><c></code> 是 utf8 编码的字符。例如：
 
 <pre>
-uA                       # 'A' is stored as 1 octet  0x41
-u½                       # '½' is stored as 2 octets 0xC2 0xBD
-u∞                       # '∞' is stored as 3 octets 0xE2 0x88 0x9E
+uA                       # 'A' 被存储为 1 个字节 0x41
+u½                       # '½' 被存储为 2 个字节 0xC2 0xBD
+u∞                       # '∞' 被存储为 3 个字节 0xE2 0x88 0x9E
 </pre>
 
 ==Null==
 
-Null represents a null pointer. The octet <code>'n'</code> represents the null value.
+Null 表示一个 null 指针或 null 对象。单字节 <code>'n'</code> 表示 null 值。
 
 <pre>
 n                        # null
@@ -158,7 +158,7 @@ n                        # null
 
 ==Empty==
 
-Empty represents a empty string or empty binary data. The octet <code>'e'</code> represents the empty value.
+Empty 表示一个空的字符串或空的二进制数据。单字节 <code>'e'</code> 表示 empty 值。
 
 <pre>
 e                        # empty
@@ -166,66 +166,66 @@ e                        # empty
 
 ==DateTime==
 
-DateTime is a reference type in hprose, although in some programming languages ​​may be a value type. This will not bring any problems. We will discuss the difference between reference types and value types in [[Hprose Specification#wiki-Ref|Ref section]].
+DateTime 在 hprose 是引用类型，尽管在某些语言中它可能是一个值类型。这并不会带来任何问题。我们将会在后面 [[#Ref|Ref]] 一节来讨论值类型和引用类型的区别。
 
-DateTime type can represent local and utc time. The local time end with the tag <code>;</code>, and the utc time end with the tag <code>Z</code>.
+DateTime 可以表示本地或 UTC 时间。本地时间以标记 <code>;</code> 作为结尾，UTC 时间以标记 <code>Z</code> 作为结尾。
 
-DateTime data can contain the year, month, day, hour, minute, second, millisecond, microsecond and nanosecond, but not all have to be required. It could only contain year, month, day to represent date or only contain hour, minute, second to represent time.
+DateTime 数据可以包含年，月，日，时，分，秒，毫秒，微秒，纳秒，但并不需要全部都包含。他可以只包含年、月、日来表示日期，或者只包含时、分、秒来表示时间。
 
-The tag <code>D</code> represents the beginning of the date, The tag <code>T</code> represents the beginning of the time.
+标记 <code>D</code> 表示日期的开始，标记 <code>T</code> 表示时间的开始。
 
-For example:
+例如：
 
 <pre>
-D20121229;                    # local date 2012-12-29
-D20121225Z                    # utc date 2012-12-25
-T032159;                      # local time 03:21:59
-T182343.654Z                  # utc time 18:23:43.654
-D20121221T151435Z             # utc datetime 2012-12-21 15:14:35
-D20501228T134359.324543123;   # local datetime 2050-12-28 13:43:59.324543123
+D20121229;                    # 本地日期 2012-12-29
+D20121225Z                    # UTC 日期 2012-12-25
+T032159;                      # 本地时间 03:21:59
+T182343.654Z                  # UTC 时间 18:23:43.654
+D20121221T151435Z             # UTC 日期时间 2012-12-21 15:14:35
+D20501228T134359.324543123;   # 本地日期时间 2050-12-28 13:43:59.324543123
 </pre>
 
 ==Bytes==
 
-Bytes type represents binary data. It corresponds to byte[] or stream object in the programming language.
+Bytes 类型表示二进制数据。它相当于编程语言中的 byte[] 或数据流对象。
 
-The max length of bytes is 2147483647.
+Bytes 的最大长度为 2147483647。
 
-The binary data <code>bytes</code> (assuming its length is <code>len</code>) is represented like this:
+二进制数据 <code>bytes</code> (假设它的长度为 <code>len</code>) 表示为如下形式：
 
 <pre>
 b<len>"<bytes>"
 </pre>
 
-The tag <code>b</code> represents the beginning of binary data. If <code><len></code> is 0, <code><len></code> can be omitted. <code><bytes></code> is the raw binary data. The tag <code>"</code> is used to represent the beginning and the end of the binary data.
+标记 <code>b</code> 表示二进制数据的开始。如果 <code><len></code> 为 0，<code><len></code> 可以被省略。<code><bytes></code> 是原始的二进制数据。标记 <code>"</code> 用来表示二进制数据的开始和结束。
 
-For example:
+例如：
 
 <pre>
-b""                           # empty binary data
+b""                           # 空的二进制数据
 b10"!@#$%^&*()"               # byte[10] { '!', '@', '#', '$', '%', '^', '&', '*', '(', ')' }
 </pre>
 
 ==String==
 
-String type represents unicode character string or array encoded in UTF8.
+String 类型表示 Unicode 字符组成的字符串或者字符数组，或者 UTF8 编码的字符串或字符数组。
 
-The max length of string is 2147483647. The length is the number of neither bytes nor unicode codepoints. It is the number of 16-bit unicode characters.
+字符串的最大长度为 2147483647。该长度既非字节数，也非 Unicode 代码点个数。它表示的是 16 位的 Unicode（UTF-16 编码）的字符个数。
 
-The string <code>str</code> (assuming its length is <code>len</code>) is represented like this:
+字符串 <code>str</code> (假设它的长度为 <code>len</code>) 表示为如下形式：
 
 <pre>
 s<len>"<str>"
 </pre>
 
-The tag <code>s</code> represents the beginning of string. If <code><len></code> is 0, <code><len></code> can be omitted. <code><str></code> is the utf8 encode string. The tag <code>"</code> is used to represent the beginning and the end of the string.
+标记 <code>s</code> 表示字符串的开始。如果 <code><len></code> 为 0, <code><len></code> 可以被忽略。<code><str></code> 是 UTF-8 编码的字符串。标记 <code>"</code> 表示字符串的开始与结束。
 
-For example:
+例如：
 
 <pre>
-s""                           # empty string
-s12"Hello world!"             # string 'Hello world!'
-s2"你好"                      # string '你好'
+s""                           # 空的字符串
+s12"Hello world!"             # 字符串 'Hello world!'
+s2"你好"                      # 字符串 '你好'
 </pre>
 
 ==GUID==
