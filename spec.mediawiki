@@ -580,7 +580,7 @@ void errorExample() {
 <pre>
 Cs12"errorExample"z               # client call
 
-Es24"This is a error example."z    # server reply
+Es24"This is a error example."z   # server reply
 </pre>
 
 If a error occurs during a multicall, the multicall can be interrupted. for example:
