@@ -13,7 +13,6 @@ The hprose protocol has the following design goals:
 * It must support recursive types.
 * It must support unicode strings.
 * It must support 8-bit binary data without escaping or using attachments.
-* It must support encryption, compression, signature, and transaction context envelopes.
 
 =Serialization Format=
 
