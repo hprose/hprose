@@ -819,7 +819,7 @@ rpc-reply = rpc-error end / 1*(rpc-result [rpc-arguments]) [rpc-error] end
 
 =版权与许可=
 
-© Copyright 2008-2015 Hprose.com. All Rights Reserved.
+© Copyright 2008-2016 Hprose.com. All Rights Reserved.
 
 Any party may implement this protocol for any purpose under the terms of the MIT License, provided that the implementation conforms to this specification. 
 
