@@ -2,7 +2,7 @@
 
 == 非技术问题 ==
 
-=== 为啥该项目叫 hprose？ ===
+=== 为什么叫 hprose？ ===
 
 hprose 是 High Performance Remote Object Service Engine 的首字母缩写，翻译成中文是高性能远程对象服务引擎。
 
@@ -87,3 +87,25 @@ hprose 序列化在实现上提供了细粒度的序列化和反序列化接口�
 hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hprose 是可以支持跟一些其它的标准的 RPC 协议进行互通的。比如在有些语言的 hprose 实现上，已经内置了 JSONRPC 的过滤器，在这种情况下，只需要在服务器上设置好 JSONRPC 的过滤器，就可以直接把 Hprose 服务器变身成 hprose/JSONRPC 双料服务器。而在 hprose 客户端上设置好 JSONRPC 过滤器之后，hprose 客户端也可以变身成 JSONRPC 客户端，可以直接跟任何标准的 JSONRPC 服务器进行互通。
 
 所以即使 hprose 的核心序列化方式是不可替换的 hprose 序列化方式，但是这并不影响跟其它序列化方式的 RPC 服务器互通。
+
+== JavaScript 常见问题 ==
+
+=== hprose 支持 JavaScript 吗？===
+
+不但支持，而且有 3 个版本。
+
+=== 为什么 hprose 有 3 个 JavaScript 版本？ ===
+
+最初只有 [https://github.com/hprose/hprose-js hprose-js] 这一个版本，它支持各种新旧浏览器，甚至支持早已被许多前端框架摒弃的 IE6-IE8。
+
+它不但支持各种桌面浏览器，还支持各种移动浏览器，而且不仅仅支持 iOS、Android 这两个平台的浏览器，还支持比较冷门的 Windows Phone，Blackberry 系统浏览器，甚至早已过时的 WebOS，MeeGo，Symbian，Windows Mobile IE 都支持。
+
+后来 Hybird App 开始流行之后，hprose-js 也增加了对各种 Hybird App 平台的支持，甚至连 tcp、websocket 通讯都支持。
+
+不过这都是后来的事情，最初 hprose-js 只支持各种浏览器上的 http 通讯，并不支持 tcp、websocket 也不支持 Hybird App。
+
+当各种主流浏览器都开始支持 html5 时，hprose 推出了一个专门针对 html5 的 [https://github.com/hprose/hprose-html5 hprose-html5] 版本。这个版本主要是增加了对 ArrayBuffer 和 Typed Array 的支持，比如 Uint8Array，Int32Array, Float64Array 等。这样就可以高效的传递二进制数据了。
+
+后来 nodejs 出现之后，hprose 也推出了一个针对服务器端使用的 [https://github.com/hprose/hprose-nodejs hprose-nodejs] 版本。这个版本不但有跟 hprose-js, hprose-html5 用法一致的客户端，还提供了服务器实现。nodejs 版本同样支持高效的二进制数据传输。
+
+这就是 3 个 JavaScript 版本的来历。
