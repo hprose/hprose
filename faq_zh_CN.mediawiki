@@ -114,7 +114,9 @@ hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hpro
 
 当然支持，必须支持。因为这个是 hprose 最初设计的目标之一。
 
-[https://github.com/hprose/hprose-js hprose-js] 对于不支持 XMLHttpRequest 2.0 的浏览器使用 Flash 跨域调用的方式，使用时，只需要将 [https://github.com/hprose/hprose-js/blob/master/dist/FlashHttpRequest.swf FlashHttpRequest.swf] 这个文件放在客户端可以访问的目录下，使用：
+[https://github.com/hprose/hprose-js hprose-js] 对于不支持 XMLHttpRequest 2.0 的浏览器使用 Flash 跨域调用的方式。
+
+使用时，只需要将 [https://github.com/hprose/hprose-js/blob/master/dist/FlashHttpRequest.swf FlashHttpRequest.swf] 这个文件放在客户端可以访问的目录下，使用：
 
 <code>
 <script type="text/javascript" src="hprose.js" flashpath="/"></script>
@@ -122,3 +124,4 @@ hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hpro
 
 指定 FlashHttpRequest.swf 的路径。然后服务器端根目录下（注意：一定是根目录！）放一个 [https://github.com/hprose/hprose-js/blob/master/dist/crossdomain.xml crossdomain.xml] 就可以跨域访问了。
 
+对于支持 XHR 2.0 的浏览器，跟 [https://github.com/hprose/hprose-html5 hprose-html5] 一样，是采用 CORS 方式来实现跨域的。客户端不需要任何特殊设置。服务器端只要开启相应的跨域选项就可以了。Hprose 的各种语言的 HTTP 服务器都提供了跨域选项的设置，具体使用的时候，可以直接参考文档。这里就不详细说明了。
