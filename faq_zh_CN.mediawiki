@@ -100,12 +100,25 @@ hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hpro
 
 它不但支持各种桌面浏览器，还支持各种移动浏览器，而且不仅仅支持 iOS、Android 这两个平台的浏览器，还支持比较冷门的 Windows Phone，Blackberry 系统浏览器，甚至早已过时的 WebOS，MeeGo，Symbian，Windows Mobile IE 都支持。
 
-后来 Hybird App 开始流行之后，hprose-js 也增加了对各种 Hybird App 平台的支持，甚至连 tcp、websocket 通讯都支持。
+后来 Hybird App 开始流行之后，[https://github.com/hprose/hprose-js hprose-js] 也增加了对各种 Hybird App 平台的支持，甚至连 tcp、websocket 通讯都支持。
 
-不过这都是后来的事情，最初 hprose-js 只支持各种浏览器上的 http 通讯，并不支持 tcp、websocket 也不支持 Hybird App。
+不过这都是后来的事情，最初 [https://github.com/hprose/hprose-js hprose-js] 只支持各种浏览器上的 http 通讯，并不支持 tcp、websocket 也不支持 Hybird App。
 
 当各种主流浏览器都开始支持 html5 时，hprose 推出了一个专门针对 html5 的 [https://github.com/hprose/hprose-html5 hprose-html5] 版本。这个版本主要是增加了对 ArrayBuffer 和 Typed Array 的支持，比如 Uint8Array，Int32Array, Float64Array 等。这样就可以高效的传递二进制数据了。
 
-后来 nodejs 出现之后，hprose 也推出了一个针对服务器端使用的 [https://github.com/hprose/hprose-nodejs hprose-nodejs] 版本。这个版本不但有跟 hprose-js, hprose-html5 用法一致的客户端，还提供了服务器实现。nodejs 版本同样支持高效的二进制数据传输。
+后来 nodejs 出现之后，hprose 也推出了一个针对服务器端使用的 [https://github.com/hprose/hprose-nodejs hprose-nodejs] 版本。这个版本不但有跟 [https://github.com/hprose/hprose-js hprose-js], [https://github.com/hprose/hprose-html5 hprose-html5] 用法一致的客户端，还提供了服务器实现。nodejs 版本同样支持高效的二进制数据传输。
 
 这就是 3 个 JavaScript 版本的来历。
+
+=== hprose for JavaScript 支持跨域调用吗？===
+
+当然支持，必须支持。因为这个是 hprose 最初设计的目标之一。
+
+[https://github.com/hprose/hprose-js hprose-js] 对于不支持 XMLHttpRequest 2.0 的浏览器使用 Flash 跨域调用的方式，使用时，只需要将 [https://github.com/hprose/hprose-js/blob/master/dist/FlashHttpRequest.swf FlashHttpRequest.swf] 这个文件放在客户端可以访问的目录下，使用：
+
+<code>
+<script type="text/javascript" src="hprose.js" flashpath="/"></script>
+</code>
+
+指定 FlashHttpRequest.swf 的路径。然后服务器端根目录下（注意：一定是根目录！）放一个 [https://github.com/hprose/hprose-js/blob/master/dist/crossdomain.xml crossdomain.xml] 就可以跨域访问了。
+
