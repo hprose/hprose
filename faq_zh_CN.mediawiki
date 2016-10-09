@@ -8,7 +8,7 @@ hprose 是 High Performance Remote Object Service Engine 的首字母缩写，�
 
 === hprose 怎么发音？ ===
 
-我英语不好，我也不知道该怎么念才对，所以你想怎么念，你随便。我有时候会念 h-prose，有时候会念 h-p-rose，但我基本上不会念成 h-p-r-o-s-e。
+我英语不好，我也不知道该怎么念才对，所以你想怎么念，你随便。我有时候会念 h-prose，有时候会念 h-p-rose，但我基本上不会念成 h-p-r-o-s-e，除了别人问我怎么拼写的时候。
 
 === hprose 是免费的吗？ ===
 
