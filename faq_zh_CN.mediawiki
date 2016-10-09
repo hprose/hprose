@@ -28,23 +28,23 @@ hprose 是 High Performance Remote Object Service Engine 的首字母缩写，�
 
 hprose 拥有自己的[https://github.com/hprose/hprose/blob/master/spec_zh_CN.mediawiki#-2 序列化格式]，这是一种紧凑的半文本的序列化格式。
 
-=== 为什么不使用 XML 序列化方式 ===
+=== 为什么不使用 XML 序列化方式？ ===
 
 XML 太臃肿了，而且解析效率太低。
 
-=== 为什么不使用 JSON 序列化方式 ===
+=== 为什么不使用 JSON 序列化方式？ ===
 
 JSON 确实是一种不错的数据序列化方式，但是它可以表示的数据类型有限，不支持数据中包含自引用和互引用，序列化和反序列化复杂数据效率较低。虽然拥有众多的实现，但是不同的实现之间存在很多兼容性问题。
 
-=== 为什么不使用 protobuf 序列化方式 ===
+=== 为什么不使用 protobuf 序列化方式？ ===
 
 protobuf(Protocol Buffer) 确实是一种比较高效的序列化方式，但是 protobuf 的序列化数据不是自描述的，所以，它不适合用于动态远程调用的实现。使用它，需要编写 proto 文件，然后生成客户端和服务器端的框架代码，这样一来，会导致客户端和服务器端紧密耦合，而这恰恰是 hprose 要解决的主要问题之一，所以 hprose 没有采用这种静态代码生成方式的序列化方式，所以这也是不使用类似的 thrift 之类的格式原因。况且 hprose 的序列化实现并不比这些慢，比如在 Java，.NET 等语言中，hprose 动态序列化的性能都远超 protobuf 静态序列化的性能。
 
-=== 为什么不使用 hessian 序列化方式 ===
+=== 为什么不使用 hessian 序列化方式？ ===
 
 hessian 序列化方式跟 hprose 类似，都属于动态序列化方式，不同点是 hessian 采用的是二进制序列化方式，而且 hessian 序列化方式仅仅对 Java 支持的比较好，对其它语言的支持就比较差了，所以跨语言能力有限。而且即使是对 Java 的支持也比 hprose 序列化要逊色，在性能上，hprose 序列化要比 hessian 快一倍多（二进制序列化并不一定比文本序列化快，更何况 hprose 并不是严格意义上的文本序列化，而是半文本序列化），在序列化之后的数据大小上，hprose 跟 hessian 不相上下，在序列化一些复杂数据时，hprose 比 hessian 序列化的数据还要小。hprose 对 Java 的泛型数据的序列化和反序列化也比 hessian 要好，在跨语言支持上，hprose 序列化更是比 hessian 序列化强得多。所以，完全没必要使用 hessian 序列化方式。
 
-=== 为什么不使用 msgpack 序列化方式 ===
+=== 为什么不使用 msgpack 序列化方式？ ===
 
 msgpack 序列化方式跟 hessian 类似，也是动态序列化，也是二进制序列化，但是性能和跨语言能力比 hessian 要高的多。不过 msgpack（MessagePack）序列化方式出现较晚，hprose 开发时，还没有 msgpack 序列化方式。在 msgpack 成为一种成熟的序列化格式时，hprose 也已经被广泛使用了。
 
