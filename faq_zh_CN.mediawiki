@@ -128,10 +128,10 @@ hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hpro
 
 === 在 React Native 中支持吗？===
 
-支持。可以使用 hprose-html5 版本。在包含时请使用：
+支持。可以使用 hprose-js 版本。在包含时请使用：
 
 <code>
-const hprose = require('hprose-html5/dist/hprose-html5.src.js');
+const hprose = require('hprose-js/dist/hprose.src.js');
 </code>
 
 方式来包含源码版本。压缩版本在 React Native 中不能被正确识别。
