@@ -125,3 +125,13 @@ hprose 提供的过滤器可以让你实现通讯协议的转换。所以，hpro
 指定 FlashHttpRequest.swf 的路径。然后服务器端根目录下（注意：一定是根目录！）放一个 [https://github.com/hprose/hprose-js/blob/master/dist/crossdomain.xml crossdomain.xml] 就可以跨域访问了。
 
 对于支持 XHR 2.0 的浏览器，跟 [https://github.com/hprose/hprose-html5 hprose-html5] 一样，是采用 CORS 方式来实现跨域的。客户端不需要任何特殊设置。服务器端只要开启相应的跨域选项就可以了。Hprose 的各种语言的 HTTP 服务器都提供了跨域选项的设置，具体使用的时候，可以直接参考文档。这里就不详细说明了。
+
+=== 在 React Native 中支持吗？===
+
+支持。可以使用 hprose-html5 版本。在包含时请使用：
+
+<code>
+const hprose = require('hprose-html5/dist/hprose-html5.src.js');
+</code>
+
+方式来包含源码版本。压缩版本在 React Native 中不能被正确识别。
