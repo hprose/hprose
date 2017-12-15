@@ -802,7 +802,7 @@ function-arguments = list
 
 passing-by-ref = true
 
-rpc-call = 1*(%x43 function-name [[function-arguments] passing-by-ref]) end
+rpc-call = 1*(%x43 function-name [function-arguments [passing-by-ref]]) end
 
 rpc-result = %x52 serialize-data
 
