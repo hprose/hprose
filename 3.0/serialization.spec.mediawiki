@@ -1,0 +1,567 @@
+=Design Goals=
+
+The hprose serialization format was created as a lightweight, self-describing, semi-text, compact, dynamic-typed, language-neutral, platform-neutral serialization protocol. 
+
+The hprose serialization format has the following design goals:
+
+* It must be self-describe, not require external schema definitions.
+* It must be human-readable except the original binary data, even if there is a little difficult.
+* It must be as compact as possible.
+* It must be as fast as possible.
+* It must be language-independent.
+* It must be platform-neutral.
+* It must support recursive types.
+* It must support unicode strings.
+* It must support binary data without escaping or using attachments.
+
+=Serialization Format=
+
+Hprose serialization has 7 value types:
+
+# [[#Integer|Integer]] (32-bit signed int)
+# [[#Long|Long]] (unlimited long integer)
+# [[#Double|Double]] (float, double or decimal)
+# [[#Boolean|Boolean]]
+# [[#UTF8_char|UTF8 char]] (16-bit unicode char, UTF8 format, 1-3 bytes)
+# [[#Null|Null]]
+# [[#Empty|Empty]] (empty string, empty binary data)
+
+4 simple reference types:
+
+# [[#DateTime|DateTime]]
+# [[#Bytes|Bytes]]
+# [[#String|String]]
+# [[#GUID|GUID]]
+
+and 3 recursive reference types:
+
+# [[#List|List]]
+# [[#Map|Map]]
+# [[#Object|Object]]
+
+In Hprose 3.0, the [#Exception|Exception] type is added.
+
+Each type is represented by one or more tags mixed data. Each tag is a octet. 
+
+The tags are case-sensitive. The serialization data are blank-sensitive.
+
+==Integer==
+
+If the integer <code>n</code> satisfies 0 &le; n &le; 9, the serialization data is represented by the octet 0x30 + n.
+
+The other integer is represented like this:
+
+<pre>
+i<n>;
+</pre>
+
+The tag <code>i</code> represents the beginning of the integer, and the tag <code>;</code> represents the end of the integer.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+0                        # int 0
+8                        # int 8
+i1234567;                # int 1234567
+i-128;                   # int -128
+</pre>
+
+==Long==
+
+The long integer <code>n</code> is represented like this:
+
+<pre>
+l<n>;
+</pre>
+
+The tag <code>l</code> represents the beginning of the long integer, and the tag <code>;</code> represents the end of the long integer.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+l1234567890987654321;    # long 1234567890987654321
+l-987654321234567890;    # long -987654321234567890
+</pre>
+
+==Double==
+
+The double type has a 3 special value: NaN, Positive Infinity and Negative Infinity.
+
+The NaN is represented by the octet <code>'N'</code>.
+
+The Positive Infinity is represented by two octets <code>'I+'</code>.
+
+The Negative Infinity is represented by two octets <code>'I-'</code>.
+
+The other double <code>n</code> is represented like this:
+
+<pre>
+d<n>;
+</pre>
+
+The tag <code>d</code> represents the beginning of the double. and the tag <code>;</code> represents the end of the double.
+
+<code><n></code> is the string representation of n.
+
+For example:
+
+<pre>
+N                        # NaN
+I+                       # Infinity
+I-                       # -Infinity
+d3.1415926535898;        # double 3.1415926535898
+d-0.1;                   # double -0.1
+d-1.45E23;               # double -1.45E23
+d3.76e-54;               # double 3.76e-54
+</pre>
+
+The exponential symbol <code>e</code> is case-insensitive.
+
+==Boolean==
+
+The octet <code>'t'</code> represents true, and the octet <code>'f'</code> represents false.
+
+<pre>
+t                        # true
+f                        # false
+</pre>
+
+==UTF8 char==
+
+Most languages have a unicode char type, such as Java, C#. UTF8 char is used to store this type data. So it can't stores all the unicode codepoint. If an unicode codepoint need 2 char to store, it will be serialized to a [[#String|String]].
+
+The char <code><c></code> is represented like this:
+<pre>
+u<c>
+</pre>
+
+The tag <code>u</code> represents the beginning of the UTF8 char. There is no end tag, because UTF8 char is self-describe.
+
+<code><c></code> is the utf8 encode char. For example:
+
+<pre>
+uA                       # 'A' is stored as 1 octet  0x41
+u½                       # '½' is stored as 2 octets 0xC2 0xBD
+u∞                       # '∞' is stored as 3 octets 0xE2 0x88 0x9E
+</pre>
+
+==Null==
+
+Null represents a null pointer or null object. The octet <code>'n'</code> represents the null value.
+
+<pre>
+n                        # null
+</pre>
+
+==Empty==
+
+Empty represents a empty string or empty binary data. The octet <code>'e'</code> represents the empty value.
+
+<pre>
+e                        # empty
+</pre>
+
+==DateTime==
+
+DateTime is a reference type in hprose, although in some programming languages ​​may be a value type. This will not bring any problems. We will discuss the difference between reference types and value types in [[#Ref|Ref]] section.
+
+DateTime type can represent local and utc time. The local time end with the tag <code>;</code>, and the utc time end with the tag <code>Z</code>.
+
+DateTime data can contain the year, month, day, hour, minute, second, millisecond, microsecond and nanosecond, but not all have to be required. It could only contain year, month, day to represent date or only contain hour, minute, second to represent time.
+
+The tag <code>D</code> represents the beginning of the date, The tag <code>T</code> represents the beginning of the time.
+
+For example:
+
+<pre>
+D20121229;                    # local date 2012-12-29
+D20121225Z                    # utc date 2012-12-25
+T032159;                      # local time 03:21:59
+T182343.654Z                  # utc time 18:23:43.654
+D20121221T151435Z             # utc datetime 2012-12-21 15:14:35
+D20501228T134359.324543123;   # local datetime 2050-12-28 13:43:59.324543123
+</pre>
+
+==Bytes==
+
+Bytes type represents binary data. It corresponds to byte[] or stream object in the programming language.
+
+The max length of bytes is 2147483647.
+
+The binary data <code>bytes</code> (assuming its length is <code>len</code>) is represented like this:
+
+<pre>
+b<len>"<bytes>"
+</pre>
+
+The tag <code>b</code> represents the beginning of binary data. If <code><len></code> is 0, <code><len></code> can be omitted. <code><bytes></code> is the raw binary data. The tag <code>"</code> is used to represent the beginning and the end of the binary data.
+
+For example:
+
+<pre>
+b""                           # empty binary data
+b10"!@#$%^&*()"               # byte[10] { '!', '@', '#', '$', '%', '^', '&', '*', '(', ')' }
+</pre>
+
+==String==
+
+String type represents unicode character string or array encoded in UTF8.
+
+The max length of string is 2147483647. The length is the number of neither bytes nor unicode codepoints. It is the number of 16-bit unicode characters.
+
+The string <code>str</code> (assuming its length is <code>len</code>) is represented like this:
+
+<pre>
+s<len>"<str>"
+</pre>
+
+The tag <code>s</code> represents the beginning of string. If <code><len></code> is 0, <code><len></code> can be omitted. <code><str></code> is the utf8 encode string. The tag <code>"</code> is used to represent the beginning and the end of the string.
+
+For example:
+
+<pre>
+s""                           # empty string
+s12"Hello world!"             # string 'Hello world!'
+s2"你好"                      # string '你好'
+</pre>
+
+==GUID==
+
+GUID is short for Globally Unique Identifier. It corresponds to GUID or UUID in the programming language.
+
+GUID is a 128-bit value. it is represented like this:
+
+<pre>
+g{<GUID>}
+</pre>
+
+The tag <code>g</code> represents the beginning of GUID. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the GUID. <code><GUID></code> is a string formatted as 32 hexadecimal digits with groups separated by hyphens, such as AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6.
+
+For example:
+
+<pre>
+g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}              # GUID 'AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6'
+</pre>
+
+GUID string is case-insensitive.
+
+==List==
+
+List is a recursive reference type. It corresponds to array, list, set or collection in the programming language.
+
+It can contain 0 or more elements. the element can be any valid type in hprose.
+
+The max count of list elements is 2147483647.
+
+The list with n elements is represented like this:
+
+<pre>
+a<n>{<element_1><element_2><element_3>...<element_n>}
+</pre>
+
+The tag <code>a</code> represents the beginning of list. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the list. <code><element_i></code> is serialized data for every element. There is no delimiter between elements, because the serialized data is self-describe.
+
+For example:
+
+<pre>
+a{}                                                       # 0 element array
+a10{0123456789}                                           # int[10] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+a7{s3"Mon"s3"Tue"s3"Wed"s3"Thu"s3"Fri"s3"Sat"s3"Sun"}     # string[7] {'Mon, 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'}
+a3{a3{123}a3{456}a3{789}}                                 # int[][] { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} }
+</pre>
+
+==Map==
+
+Map is another recursive reference type. It corresponds to map, hashtable, dictionary or dynamic object in the programming language.
+
+It can contain 0 or more key-value pairs. The key and the value can be any valid type in hprose.
+
+The max count of map key-value pairs is 2147483647.
+
+The map with n key-value pairs is represented like this:
+
+<pre>
+m<n>{<key_1><value_1><key_2><value_2>...<key_n><value_n>}
+</pre>
+
+The tag <code>m</code> represents the beginning of map. If <code><n></code> is 0, <code><n></code> can be omitted. The tags <code>{</code><code>}</code> are used to represent the beginning and the end of the map. <code><key_i></code> is serialized data for every key, <code><value_i></code> is serialized data for every value. There is no delimiter between key, value and key-value pairs, because the serialized data is self-describe.
+
+For example:
+
+<pre>
+m{}                                                       # 0 key-value pairs map
+m2{s4"name"s5"Tommy"s3"age"i24;}                          # {
+                                                          #     "name": "Tommy",
+                                                          #     "age" : 24
+                                                          # }
+</pre>
+
+==Object==
+
+Object is similar to the map, but the key of the object must be a string, and the object has a fixed structure. Here, this fixed structure is called class. The class corresponds to struct, class or object prototype in the programming language.
+
+The object serialization is more complex than the map. It is separated into two parts:
+
+# Class serialization
+# Object instance serialization
+
+Class serialization includes the type name, the count of fields/properties, and the field/property names. The class is only serialized once. Following objects only need to serialize their values.
+
+Every class has an integer reference, which is referenced by object instances serialization.
+
+The class integer reference starts from 0. It means that, if there are some different objects belong to some different classes, when serializing the classes, the first serialized class is 0, the second serialized class is 1, and so on.
+
+The form of class serialization is below:
+
+<pre>
+c<type_name_length>"<type_name_string>"<field_count>{<field_1_name><field_2_name>...<field_n_name>}
+</pre>
+
+The form of object instance serialization is below:
+
+<pre>
+o<class_integer_reference>{<field_1_value><field_2_value>...<field_n_value>}
+</pre>
+
+For example:
+
+<pre>
+class Person {
+    String name;
+    int age;
+}
+
+Person[] users = new Person[2];
+
+users[0] = new Person("Tommy", 24);
+users[1] = new Person("Jerry", 19);
+</pre>
+
+The serialization data for users is:
+
+<pre>
+a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
+</pre>
+
+==Ref==
+
+We know that JSON is a lightweight data format. But JSON can't represent the following data:
+
+<pre>
+var list = [];
+list[0] = list;
+</pre>
+
+Because JSON does not support ref. But hprose can serialize it like this:
+
+<pre>
+a1{r0;}
+</pre>
+
+Every reference type data has an integer reference, it is independent of class integer references.
+
+The integer reference of reference data starts from 0. When the same data is serialized again, it will be serialized as a ref. 
+
+But note that the ref itself does not have the integer reference.
+
+The ref data is represented like this:
+
+<pre>
+r<integer_reference>;
+</pre>
+
+The tag <code>r</code> represents the beginning of the ref. and the tag <code>;</code> represents the end of the ref.
+
+For example:
+
+<pre>
+var list = [
+    {
+        "name": "Tommy",
+        "age" : 24 
+    },
+    {
+        "name": "Jerry",
+        "age" : 18 
+    }
+];
+</pre>
+
+The serialization data for list is:
+
+<pre>
+a2{m2{s4"name"s5"Tommy"s3"age"i24;}m2{r2;s5"Jerry"r4;i18;}}
+</pre>
+
+Another example:
+
+<pre>
+var a = [];
+var b = [];
+a[0] = a;
+a[1] = b;
+b[0] = a;
+b[1] = b;
+var c = [a,b];
+</pre>
+
+The serialization data for c is:
+
+<pre>
+a2{a2{r1;a2{r1;r2;}}r2;}
+</pre>
+
+==Exception==
+
+Before hprose 3.0, Exception only was returned in the following format when an error occurred or an exception was thrown on the hprose RPC server side:
+
+<pre>
+E<error_message>
+</pre>
+
+<code><error_message></code> is the serialized error message string.
+
+In hprose 3.0, Exception can also be passed from the client to the server as a parameter, so it is also included in the serializable data range.
+
+The format is exactly the same as the previous version.
+
+=Formal Definitions=
+
+[http://tools.ietf.org/html/rfc4234 ABNF]:
+<pre>
+
+serialize-data = integer / long / double / nan / positive-infinity / negative-infinity /
+                 true / false / null / empty / utf8-char / bytes / string / datetime / guid /
+                 list / map / object / ref / exception
+
+UINT = "0" / %x31-39 *DIGIT
+
+SINT = *("+" / "-") UINT
+
+integer = DIGIT / %x69 SINT ";"
+
+long = %x6C SINT ";"
+
+double = %x64 SINT ["." 1*DIGIT ["E" SINT]] ";"
+
+nan = %x4E
+
+positive-infinity = %x49 "+"
+
+negative-infinity = %x49 "-"
+
+true = %x74
+
+false = %x66
+
+null = %x6E
+
+empty = %x65
+
+one-byte-utf8 = %x00-7F
+
+two-byte-utf8 = %xC0-DF %x80-BF
+
+three-byte-utf8 = %xE0-EF %x80-BF %x80-BF
+
+four-byte-utf8 = %xF0-F7 %x80-BF %x80-BF %x80-BF
+
+utf8 = one-byte-utf8 / two-byte-utf8 / three-byte-utf8 / four-byte-utf8
+
+utf8-char = %x75 (one-byte-utf8 / two-byte-utf8 / three-byte-utf8)
+
+bytes-length = UINT
+
+bytes = %x62 DQUOTE DQUOTE / %x62 bytes-length DQUOTE <bytes-length>OCTET DQUOTE
+
+string-length = UINT
+
+string = %x73 DQUOTE DQUOTE / %x73 string-length DQUOTE <string-length>utf8 DQUOTE
+
+year = 4DIGIT
+
+month = "0" %x31-39 / "1" %x30-32
+
+day = "0" %x31-39 / %x31-32 %x30-39 / "3" %x30-31
+
+local = ";"
+
+utc = %x5A
+
+timezone = local / utc
+
+date = %x44 year month day timezone
+
+hour = %x30-31 DIGIT / "2" %x30-x33
+
+minute = %x30-35 DIGIT
+
+second = %x30-35 DIGIT
+
+millisecond = 3DIGIT
+
+microsecond = 6DIGIT
+
+nanosecond = 9DIGIT
+
+time = %x54 hour minute second ["." (millisecond / microsecond / nanosecond)] timezone
+
+datetime = date / time / %x44 year month day time
+
+guid = %x67 "{" 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG "}"
+
+element = serialize-data
+
+list-count = UINT
+
+list = %x61 "{" "}" / %x61 list-count "{" <list-count>element "}"
+
+key = serialize-data
+
+value = serialize-data
+
+keyvalue = key value
+
+map-count = UINT
+
+map = %x6D "{" "}" / %x6D map-count "{" <map-count>keyvalue "}"
+
+classname-length = UINT
+
+classname = classname-length DQUOTE <classname-length>utf8 DQUOTE
+
+fieldname = string
+
+field-count = UINT
+
+class = %x63 classname field-count "{" <field-count>fieldname "}"
+
+class-ref = UINT
+
+fieldvalue = serialize-data
+
+object = [class] %x6F class-ref "{" <field-count>fieldvalue "}"
+
+ref = %x72 UINT ";"
+
+exception = %x45 string
+
+</pre>
+
+=Authors Information=
+
+ 	Ma Bingyao <mabingyao@gmail.com>
+
+=Copyright and Licensing=
+
+© Copyright 2008-2019 Hprose.com. All Rights Reserved.
+
+Any party may implement this protocol for any purpose under the terms of the MIT License, provided that the implementation conforms to this specification. 
+
+This document and translations of it may be copied and furnished to others, and derivative works that comment on or otherwise explain it or assist in its implementation may be prepared, copied, published and distributed, in whole or in part, without restriction of any kind, provided that the above copyright notice and these paragraphs are included on all such copies and derivative works.
+
+THIS DOCUMENT AND THE INFORMATION CONTAINED HEREIN IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.

@@ -1,0 +1,567 @@
+=设计目标=
+
+Hprose 序列化格式是一个轻量级、自描述、半文本、格式紧凑、动态类型、语言无关、平台无关的序列化格式协议。
+
+Hprose 序列化格式具有以下设计目标：
+
+* 它必须是自描述的，无需外部描述定义。
+* 除了本来的二进制数据以外，它必须具有可读性，哪怕读起来稍微有些困难。
+* 它必须尽可能的格式紧凑。
+* 它必须能够尽可能快的被解析。
+* 它必须是语言无关（跨语言）的。
+* 它必须是平台无关（跨平台）的。
+* 它必须支持递归类型数据。
+* 它必须支持 Unicode 字符串。
+* 它必须在无需转义和无需使用附件方式的情况下支持二进制数据。
+
+=序列化格式=
+
+Hprose 序列化拥有 7 种值类型：
+
+# [[#Integer|Integer]] (32位有符号整型数)
+# [[#Long|Long]] (无限精度长整型数)
+# [[#Double|Double]] (float, double or decimal)
+# [[#Boolean|Boolean]]
+# [[#UTF8_char|UTF8 char]] (16位 Unicode 字符, UTF-8 格式, 1-3 个字节)
+# [[#Null|Null]]
+# [[#Empty|Empty]] (空的字符串, 空的二进制数据)
+
+4 种简单引用类型：
+
+# [[#DateTime|DateTime]]
+# [[#Bytes|Bytes]]
+# [[#String|String]]
+# [[#GUID|GUID]]
+
+和 3 种可递归引用类型：
+
+# [[#List|List]]
+# [[#Map|Map]]
+# [[#Object|Object]]
+
+在 hprose 3.0 中，还补充了[[#异常|异常]]类型。
+
+每种类型以一个标记或者多个标记与数据混合表示。每个标记占一个字节（8 位）。
+
+标记是区分大小写的。序列化数据是空白敏感的。
+
+==Integer==
+
+如果整数 <code>n</code> 满足 0 &le; n &le; 9，那么序列化数据被表示为一个字节，数值为：0x30 + n。
+
+其它整数被表示为如下格式：
+
+<pre>
+i<n>;
+</pre>
+
+标记 <code>i</code> 表示整数的开始，标记 <code>;</code> 表示整数的结束。
+
+<code><n></code> 是数字 n 的字符串表示。
+
+例如：
+
+<pre>
+0                        # 整数 0
+8                        # 整数 8
+i1234567;                # 整数 1234567
+i-128;                   # 整数 -128
+</pre>
+
+==Long==
+
+长整型数 <code>n</code> 表示为如下格式：
+
+<pre>
+l<n>;
+</pre>
+
+标记 <code>l</code> 表示长整型数的开始，标记 <code>;</code> 表示长整型数的结束。
+
+<code><n></code> 是数字 n 的字符串表示。
+
+例如：
+
+<pre>
+l1234567890987654321;    # 长整型数 1234567890987654321
+l-987654321234567890;    # 长整型数 -987654321234567890
+</pre>
+
+==Double==
+
+浮点数具有三个特殊值：非数字（NaN），正无穷大和负无穷大。
+
+非数字（NaN）被表示为一个字节：<code>'N'</code>。
+
+正无穷大被表示为两个字节：<code>'I+'</code>。
+
+负无穷大被表示为两个字节：<code>'I-'</code>。
+
+其它浮点数 <code>n</code> 被表示为以下格式：
+
+<pre>
+d<n>;
+</pre>
+
+标记 <code>d</code> 表示浮点数的开始，标记 <code>;</code> 表示浮点数的结束。
+
+<code><n></code> 是数字 n 的字符串表示。
+
+例如：
+
+<pre>
+N                        # 非数字（NaN）
+I+                       # 正无穷大（Infinity）
+I-                       # 负无穷大（-Infinity）
+d3.1415926535898;        # 浮点数 3.1415926535898
+d-0.1;                   # 浮点数 -0.1
+d-1.45E23;               # 浮点数 -1.45E23
+d3.76e-54;               # 浮点数 3.76e-54
+</pre>
+
+指数符号 <code>e</code> 是不区分大小写的。
+
+==Boolean==
+
+单个字节 <code>'t'</code> 表示真值（true），单个字节 <code>'f'</code> 表示假值（false）。
+
+<pre>
+t                        # true
+f                        # false
+</pre>
+
+==UTF8 char==
+
+大部分语言拥有一个 Unicode 字符类型。比如 Java 和 C#。UTF8 char 用于存储此种类型。所以你无法存储所有的 Unicode 代码点（codepoint）。如果一个 Unicode 代码点（codepoint）需要两个字符来存储。它将被序列化为一个 [[#String|String]]。
+
+字符 <code>c</code> 表示为如下形式：
+<pre>
+u<c>
+</pre>
+
+标记 <code>u</code> 表示 UTF8 char 的开始。没有结束标记，因为 UTF8 char 是自描述的。
+
+<code><c></code> 是 utf8 编码的字符。例如：
+
+<pre>
+uA                       # 'A' 被存储为 1 个字节 0x41
+u½                       # '½' 被存储为 2 个字节 0xC2 0xBD
+u∞                       # '∞' 被存储为 3 个字节 0xE2 0x88 0x9E
+</pre>
+
+==Null==
+
+Null 表示一个 null 指针或 null 对象。单字节 <code>'n'</code> 表示 null 值。
+
+<pre>
+n                        # null
+</pre>
+
+==Empty==
+
+Empty 表示一个空的字符串或空的二进制数据。单字节 <code>'e'</code> 表示 empty 值。
+
+<pre>
+e                        # empty
+</pre>
+
+==DateTime==
+
+DateTime 在 hprose 是引用类型，尽管在某些语言中它可能是一个值类型。这并不会带来任何问题。我们将会在后面[[#引用|引用]] 一节来讨论值类型和引用类型的区别。
+
+DateTime 可以表示本地或 UTC 时间。本地时间以标记 <code>;</code> 作为结尾，UTC 时间以标记 <code>Z</code> 作为结尾。
+
+DateTime 数据可以包含年，月，日，时，分，秒，毫秒，微秒，纳秒，但并不需要全部都包含。他可以只包含年、月、日来表示日期，或者只包含时、分、秒来表示时间。
+
+标记 <code>D</code> 表示日期的开始，标记 <code>T</code> 表示时间的开始。
+
+例如：
+
+<pre>
+D20121229;                    # 本地日期 2012-12-29
+D20121225Z                    # UTC 日期 2012-12-25
+T032159;                      # 本地时间 03:21:59
+T182343.654Z                  # UTC 时间 18:23:43.654
+D20121221T151435Z             # UTC 日期时间 2012-12-21 15:14:35
+D20501228T134359.324543123;   # 本地日期时间 2050-12-28 13:43:59.324543123
+</pre>
+
+==Bytes==
+
+Bytes 类型表示二进制数据。它相当于编程语言中的 byte[] 或数据流对象。
+
+Bytes 的最大长度为 2147483647。
+
+二进制数据 <code>bytes</code> (假设它的长度为 <code>len</code>) 表示为如下形式：
+
+<pre>
+b<len>"<bytes>"
+</pre>
+
+标记 <code>b</code> 表示二进制数据的开始。如果 <code><len></code> 为 0，<code><len></code> 可以被省略。<code><bytes></code> 是原始的二进制数据。标记 <code>"</code> 用来表示二进制数据的开始和结束。
+
+例如：
+
+<pre>
+b""                           # 空的二进制数据
+b10"!@#$%^&*()"               # byte[10] { '!', '@', '#', '$', '%', '^', '&', '*', '(', ')' }
+</pre>
+
+==String==
+
+String 类型表示 Unicode 字符组成的字符串或者字符数组，或者 UTF8 编码的字符串或字符数组。
+
+字符串的最大长度为 2147483647。该长度既非字节数，也非 Unicode 代码点个数。它表示的是 16 位的 Unicode（UTF-16 编码）的字符个数。
+
+字符串 <code>str</code> (假设它的长度为 <code>len</code>) 表示为如下形式：
+
+<pre>
+s<len>"<str>"
+</pre>
+
+标记 <code>s</code> 表示字符串的开始。如果 <code><len></code> 为 0, <code><len></code> 可以被忽略。<code><str></code> 是 UTF-8 编码的字符串。标记 <code>"</code> 表示字符串的开始与结束。
+
+例如：
+
+<pre>
+s""                           # 空的字符串
+s12"Hello world!"             # 字符串 'Hello world!'
+s2"你好"                      # 字符串 '你好'
+</pre>
+
+==GUID==
+
+GUID 是“全局唯一标识符”（Globally Unique Identifier）的缩写。它相当于编程语言中的 GUID 或 UUID 类型。
+
+GUID 是一个 128 位的值。它表示为如下形式：
+
+<pre>
+g{<GUID>}
+</pre>
+
+标记 <code>g</code> 表示 GUID 的开始。标记 <code>{</code><code>}</code> 用来表示 GUID 数据的开始和结束。<code><GUID></code> 是一个格式化为 32 个十六进制数字并通过连字符（-）按组分隔的字符串，比如：AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6。
+
+例如：
+
+<pre>
+g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}              # GUID 'AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6'
+</pre>
+
+GUID 字符串是不区分大小写的。
+
+==List==
+
+List 是一个可递归引用类型。它相当于编程语言中的数组（array），列表（list），集合（set）或容器（collection）类型。
+
+它可以包含 0 个或多个元素。元素可以为 hprose 中任意有效的类型。
+
+List 元素的最大数目为 2147483647。
+
+具有 <code>n</code> 个元素的 List 被表示为如下形式：
+
+<pre>
+a<n>{<元素_1><元素_2><元素_3>...<元素_n>}
+</pre>
+
+标记 <code>a</code> 表示 List 的开始。如果 <code><n></code> 为 0，<code><n></code> 可以被省略。标记 <code>{</code><code>}</code> 被用来表示 List 数据的开始和结束。<code><元素_i></code> 是每个元素序列化后的数据。元素之间没有其它任何分隔符，因为序列化数据是自描述的。
+
+例如：
+
+<pre>
+a{}                                                       # 0 个元素的数组
+a10{0123456789}                                           # int[10] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+a7{s3"Mon"s3"Tue"s3"Wed"s3"Thu"s3"Fri"s3"Sat"s3"Sun"}     # string[7] {'Mon, 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'}
+a3{a3{123}a3{456}a3{789}}                                 # int[][] { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} }
+</pre>
+
+==Map==
+
+Map 是另一种可递归引用类型。它相当于编程语言中的表（map），哈希表（hashtable），字典（dictionary）或动态对象类型。
+
+它可以包含 0 个或多个键值对。键（key）或值（value）可以为 hprose 中任意有效的类型。
+
+Map 中键值对的最大数目为 2147483647。
+
+包含有 <code>n</code> 个键值对的 Map 表示为如下形式：
+
+<pre>
+m<n>{<key_1><value_1><key_2><value_2>...<key_n><value_n>}
+</pre>
+
+标记 <code>m</code> 表示 Map 的开始。如果 <code><n></code> 为 0，<code><n></code> 可以被省略。标记 <code>{</code><code>}</code> 被用来表示 Map 数据的开始和结束。<code><key_i></code> 是每个键（key）序列化后的数据。<code><value_i></code> 是每个值（value）序列化后的数据。键（key）、值（value）和键值对之间没有其它任何分隔符，因为序列化数据是自描述的。
+
+例如：
+
+<pre>
+m{}                                                       # 0 个键值对的 Map
+m2{s4"name"s5"Tommy"s3"age"i24;}                          # {
+                                                          #     "name": "Tommy",
+                                                          #     "age" : 24
+                                                          # }
+</pre>
+
+==Object==
+
+Object 与 Map 类似，但是 Object 的键必须为字符串，并且 Object 具有一个固定的结构。在这里，我们将这个固定的结构称为类（Class）。这里的类（Class）相当于编程语言中的结构体（struct），类（class），或对象原型（object prototype）。
+
+Object 的序列化格式比 Map 要复杂的多。它被分为两个部分：
+
+# 类（Class）的序列化
+# 对象实例（Object instance）的序列化
+
+类（Class）的序列化包括类型名称，字段/属性个数，字段/属性名称。类（Class）的序列化只进行一次。后面的对象只需要序列化它们的数据值。
+
+每个类拥有一个整数引用编号，它将被对象实例的序列化所引用。
+
+类的整数引用编号从 0 开始。它表示：如果有许多不同的对象属于不同的类，那么当序列化类时，第一个序列化的类编号为 0，第二个序列化的类的编号为 1，以此类推。
+
+类的序列化格式如下：
+
+<pre>
+c<类型名称长度>"<类型名称的字符串>"<字段数目>{<字段 1 的名称><字段 2 的名称>...<字段 n 的名称>}
+</pre>
+
+对象实例序列化的格式如下：
+
+<pre>
+o<类的整数引用编号>{<字段 1 的值><字段 2 的值>...<字段 n 的值>}
+</pre>
+
+例如：
+
+<pre>
+class Person {
+    String name;
+    int age;
+}
+
+Person[] users = new Person[2];
+
+users[0] = new Person("Tommy", 24);
+users[1] = new Person("Jerry", 19);
+</pre>
+
+users 的序列化数据为：
+
+<pre>
+a2{c6"Person"2{s4"name"s3"age"}o0{s5"Tommy"i24;}o0{s5"Jerry"i19;}}
+</pre>
+
+==引用==
+
+我们知道 JSON 是一个轻量级的数据格式。但是 JSON 不能表示下面的数据：
+
+<pre>
+var list = [];
+list[0] = list;
+</pre>
+
+因为 JSON 不支持引用。但是 hprose 可以将其序列化为：
+
+<pre>
+a1{r0;}
+</pre>
+
+每个引用类型的数据拥有一个整数引用编号，但它与类的整数引用编号是相互独立的。
+
+引用类型数据的整数引用编号从 0 开始。当相同的数据被再次序列化时，它将被序列化为一个引用。
+
+但是请注意，引用本身不具有整数引用编号。
+
+引用数据表示为以下形式：
+
+<pre>
+r<整数引用编号>;
+</pre>
+
+标记 <code>r</code> 表示引用的开始。标记 <code>;</code> 表示引用的结束。
+
+例如：
+
+<pre>
+var list = [
+    {
+        "name": "Tommy",
+        "age" : 24 
+    },
+    {
+        "name": "Jerry",
+        "age" : 18 
+    }
+];
+</pre>
+
+list 的序列化数据为：
+
+<pre>
+a2{m2{s4"name"s5"Tommy"s3"age"i24;}m2{r2;s5"Jerry"r4;i18;}}
+</pre>
+
+再举一例：
+
+<pre>
+var a = [];
+var b = [];
+a[0] = a;
+a[1] = b;
+b[0] = a;
+b[1] = b;
+var c = [a,b];
+</pre>
+
+c 的序列化数据为：
+
+<pre>
+a2{a2{r1;a2{r1;r2;}}r2;}
+</pre>
+
+==异常==
+
+在 hprose 3.0 之前，异常仅在 hprose RPC 的服务器端发生错误和抛出异常时，才会以如下格式返回：
+
+<pre>
+E<error_message>
+</pre>
+
+其中 <code><error_message></code> 是序列化的错误信息字符串。
+
+在 hprose 3.0 中，异常也可以作为参数从客户端传递给服务器，因此，将它也纳入到了可序列化的数据范围之内。
+
+其格式保持与之前版本完全一致。
+
+=形式化定义=
+
+[http://tools.ietf.org/html/rfc4234 ABNF]:
+<pre>
+
+serialize-data = integer / long / double / nan / positive-infinity / negative-infinity /
+                 true / false / null / empty / utf8-char / bytes / string / datetime / guid /
+                 list / map / object / ref / exception
+
+UINT = "0" / %x31-39 *DIGIT
+
+SINT = *("+" / "-") UINT
+
+integer = DIGIT / %x69 SINT ";"
+
+long = %x6C SINT ";"
+
+double = %x64 SINT ["." 1*DIGIT ["E" SINT]] ";"
+
+nan = %x4E
+
+positive-infinity = %x49 "+"
+
+negative-infinity = %x49 "-"
+
+true = %x74
+
+false = %x66
+
+null = %x6E
+
+empty = %x65
+
+one-byte-utf8 = %x00-7F
+
+two-byte-utf8 = %xC0-DF %x80-BF
+
+three-byte-utf8 = %xE0-EF %x80-BF %x80-BF
+
+four-byte-utf8 = %xF0-F7 %x80-BF %x80-BF %x80-BF
+
+utf8 = one-byte-utf8 / two-byte-utf8 / three-byte-utf8 / four-byte-utf8
+
+utf8-char = %x75 (one-byte-utf8 / two-byte-utf8 / three-byte-utf8)
+
+bytes-length = UINT
+
+bytes = %x62 DQUOTE DQUOTE / %x62 bytes-length DQUOTE <bytes-length>OCTET DQUOTE
+
+string-length = UINT
+
+string = %x73 DQUOTE DQUOTE / %x73 string-length DQUOTE <string-length>utf8 DQUOTE
+
+year = 4DIGIT
+
+month = "0" %x31-39 / "1" %x30-32
+
+day = "0" %x31-39 / %x31-32 %x30-39 / "3" %x30-31
+
+local = ";"
+
+utc = %x5A
+
+timezone = local / utc
+
+date = %x44 year month day timezone
+
+hour = %x30-31 DIGIT / "2" %x30-x33
+
+minute = %x30-35 DIGIT
+
+second = %x30-35 DIGIT
+
+millisecond = 3DIGIT
+
+microsecond = 6DIGIT
+
+nanosecond = 9DIGIT
+
+time = %x54 hour minute second ["." (millisecond / microsecond / nanosecond)] timezone
+
+datetime = date / time / %x44 year month day time
+
+guid = %x67 "{" 8HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 4HEXDIG "-" 12HEXDIG "}"
+
+element = serialize-data
+
+list-count = UINT
+
+list = %x61 "{" "}" / %x61 list-count "{" <list-count>element "}"
+
+key = serialize-data
+
+value = serialize-data
+
+keyvalue = key value
+
+map-count = UINT
+
+map = %x6D "{" "}" / %x6D map-count "{" <map-count>keyvalue "}"
+
+classname-length = UINT
+
+classname = classname-length DQUOTE <classname-length>utf8 DQUOTE
+
+fieldname = string
+
+field-count = UINT
+
+class = %x63 classname field-count "{" <field-count>fieldname "}"
+
+class-ref = UINT
+
+fieldvalue = serialize-data
+
+object = [class] %x6F class-ref "{" <field-count>fieldvalue "}"
+
+ref = %x72 UINT ";"
+
+exception = %x45 string
+
+</pre>
+
+=作者信息=
+
+ 	马秉尧 <mabingyao@gmail.com>
+
+=版权与许可=
+
+© 版权所有 2008-2019 hprose.com，保留一切权利。
+
+任何一方可根据 MIT 许可证的条款出于任何目的来实现本协议，但前提是实现符合本规范。
+
+本文档及其译文可以复制并提供给他人，评论或以其他方式解释本文档或根据本文档实现的衍生作品可以全部或部分制备、复制、出版和分发，不受任何形式的限制，但所有这些复制品和衍生作品应包括上述版权公告和本款。
+
+本文档及其所含信息“按原样”提供，不作任何形式的明示或暗示保证，包括但不限于使用本文档所含信息不会侵犯任何权利或任何适销性或特定用途适用性的默示保证。
