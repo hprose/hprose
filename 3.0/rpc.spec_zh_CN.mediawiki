@@ -1,0 +1,159 @@
+=Hprose RPC 协议=
+
+Hprose RPC 3.0 协议相比之前的版本做了简化。现在仅保留以下几个标记：
+
+* 0x43('C'): RPC 调用
+* 0x52('R'): RPC 结果
+* 0x45('E'): RPC 错误
+* 0x7A('z'): 结束
+
+==函数名列表==
+
+RPC 服务器可以发布一个或多个函数/方法。每个函数/方法拥有一个名字。函数/方法名以字符串的形式表示。
+
+在 hprose 3.0 中，函数名列表的返回形式被简化为与普通的 RPC 调用结果的返回形式相同。
+
+如果客户端的请求包体为空，或者只发送一个结束标记 `z` 到服务器端，而没有其它数据。那么服务器端应该返回函数名列表。
+
+另外，如果客户端调用的方法名为一个特殊字符 `~`，没有参数，那么服务端也返回函数名列表。
+
+也就是说，服务器端将函数名列表作为一个名为 `~` 的远程函数发布。选择 `~` 是为了防止与任何正常函数/方法名称发生冲突。
+
+例如，如果服务器端发布了两个函数，一个是 'hello'，另一个是 'md5'，那么函数名列表应该以如下形式返回：
+
+<pre>
+Ra3{u~s5"hello"s3"md5"}z
+</pre>
+
+Hprose RPC 服务器支持发布缺失的函数/方法。这表示如果客户端调用一个服务器端不存在的函数/方法，且服务器端设置有一个统一的处理器，那么该请求可以被这个统一的处理器所处理。这个统一的处理器函数使用名称 `*` 来表示它。
+
+例如：
+
+<pre>
+Ra2{u~u*}z
+</pre>
+
+函数/方法名和缺失函数/方法统一处理器可以被一起发布。
+
+例如：
+
+<pre>
+Ra4{u~u*s5"hello"s3"md5"}z
+</pre>
+
+Hprose 服务器端必须实现函数名列表函数。
+
+==RPC 调用==
+
+RPC 调用由客户端发起，例如：
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
+</pre>
+
+你可以传递 0 个或多个参数，例如：
+
+<pre>
+Cs3"sum"a3{012}z                    # result = client.sum(0, 1, 2);
+</pre>
+
+如果没有参数，参数列表可以省略，例如：
+
+<pre>
+Cs9"deleteAll"z                    # client.deleteAll();
+</pre>
+
+Hprose RPC 3.0 取消了引用参数传递。
+
+Hprose 发布的函数/方法名是不区分大小写的。例如上面的例子中，服务器端定义的函数/方法名是 "Sum"，但是在客户端，可以使用 'sum'，'Sum' 或 'SUM' 来调用它，这都没问题。
+
+在标记 'C' 之后，标记 's' 表示函数/方法名，标记 'a' 表示参数列表。标记 'z' 表示调用结束。
+
+函数/方法名和参数列表是独立的对象序列化。因此它们具有独立的整数引用编号。
+
+Hprose RPC 3.0 也取消了批量调用支持。
+
+==RPC 应答==
+
+Hprose RPC 应答由服务器端返回，例如：
+
+<pre>
+string hello(string str) {
+    return "Hello " + str + "!";
+}
+
+int sum(int a, int b, int c) {
+    return a + b + c;
+}
+</pre>
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # 客户端调用
+
+Rs12"Hello world!"z                 # 服务器端应答
+
+Cs3"sum"a3{012}z                    # 客户端调用
+
+R3z                                 # 服务器端应答
+</pre>
+
+返回值可以是 hprose 支持的任意类型。
+
+如果发布的函数/方法不具有返回值，则返回值为 Null。
+
+==RPC 错误==
+
+如果在远程函数/方法执行过程中发生错误，hprose 服务器应该以如下格式返回错误信息：
+
+<pre>
+E<error_message>z
+</pre>
+
+<code><error_message></code> 是序列化的错误信息字符串。例如：
+
+<pre>
+void errorExample() {
+    throw new Exception("This is a error example.");
+}
+</pre>
+
+<pre>
+Cs12"errorExample"z               # 客户端调用
+
+Es24"This is a error example."z   # 服务器端应答
+</pre>
+
+=形式化定义=
+
+[http://tools.ietf.org/html/rfc4234 ABNF]:
+<pre>
+
+end = %x7A
+
+function-name = string
+
+function-arguments = list
+
+rpc-call = %x43 function-name [function-arguments] end
+
+rpc-result = %x52 serialize-data end
+
+rpc-error = %x45 string end
+
+rpc-reply = rpc-error / rpc-result
+
+</pre>
+
+=作者信息=
+
+ 	马秉尧 <mabingyao@gmail.com>
+
+=版权与许可=
+
+© 版权所有 2008-2019 hprose.com，保留一切权利。
+
+任何一方可根据 MIT 许可证的条款出于任何目的来实现本协议，但前提是实现符合本规范。
+
+本文档及其译文可以复制并提供给他人，评论或以其他方式解释本文档或根据本文档实现的衍生作品可以全部或部分制备、复制、出版和分发，不受任何形式的限制，但所有这些复制品和衍生作品应包括上述版权公告和本款。
+
+本文档及其所含信息“按原样”提供，不作任何形式的明示或暗示保证，包括但不限于使用本文档所含信息不会侵犯任何权利或任何适销性或特定用途适用性的默示保证。
