@@ -1,0 +1,159 @@
+=Hprose RPC Protocol=
+
+Hprose RPC 3.0 protocol is simpler than previous versions. For now, only the following tags are retained:
+
+* 0x43('C'): RPC Call
+* 0x52('R'): RPC Result
+* 0x45('E'): RPC Error
+* 0x7A('z'): End
+
+==Function List==
+
+The RPC server can publish one or more functions/methods. Each function/method has a name. The name is expressed as a string.
+
+In hprose 3.0, the return form of the list of function names is simplified to be the same as the result of ordinary RPC calls.
+
+If the client request body is empty, or the client-side only send the End tag 'z' without other data to the server. The server-side should return the list of function names.
+
+In addition, if the RPC request with a special name `~` and no parameters, the server also returns the list of function names.
+
+In other words, the server publishes the list of function names as a remote function named `~`. The reason for choosing `~` as the function name is to prevent conflicts with any other normal function/method name.
+
+For example, if the server side published two functions, one is 'hello', the other is 'md5', The list of function names should return the form below:
+
+<pre>
+Ra3{u~s5"hello"s3"md5"}z
+</pre>
+
+Hprose RPC server supports publishing missing functions/methods. It means that if the client calls a function/method that does not exist on the server side and the server side has a unified handler, the request can be processed by the unified handler. This unified handler function uses the name `*` to represent it.
+
+For example:
+
+<pre>
+Ra2{u~u*}z
+</pre>
+
+The named functions/methods and the missing functions/methods unified handler can be published together.
+
+For example:
+
+<pre>
+Ra4{u~u*s5"hello"s3"md5"}z
+</pre>
+
+Hprose server-side must implement it.
+
+==RPC Call==
+
+RPC call launches by the client-side, for example:
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # result = client.hello("world");
+</pre>
+
+You can pass zero or more arguments, for example:
+
+<pre>
+Cs3"sum"a3{012}z                    # result = client.sum(0, 1, 2);
+</pre>
+
+If there is no argument, the argument list can be ignored, for example:
+
+<pre>
+Cs9"deleteAll"z                    # client.deleteAll();
+</pre>
+
+Hprose RPC 3.0 cancels reference parameter passing.
+
+The function/method name published by hprose is case-insensitive. such as the above example, the function/method name defined in server-side is "Sum", but in client-side, it can use 'sum', 'Sum' or 'SUM' to invoke it, it's no problem.
+
+After tag 'C', tag 's' represents name string, tag 'a' represents argument list, tag 'z' represents the end of call.
+
+The function/method name and argument list are independent object serialization. So they have the independent integer reference.
+
+Hprose RPC 3.0 cancels multicall support.
+
+==RPC Reply==
+
+RPC reply returns from the server-side, for example:
+
+<pre>
+string hello(string str) {
+    return "Hello " + str + "!";
+}
+
+int sum(int a, int b, int c) {
+    return a + b + c;
+}
+</pre>
+
+<pre>
+Cs5"hello"a1{s5"world"}z            # client call
+
+Rs12"Hello world!"z                 # server reply
+
+Cs3"sum"a3{012}z                    # client call
+
+R3z                                 # server reply
+</pre>
+
+The return value can be any type supported by hprose.
+
+If published function/method has no return value, the return value is Null.
+
+==RPC Error==
+
+If there is a error occurs during the execution of the remote function/method, hprose server should return the error message in the form below:
+
+<pre>
+E<error_message>z
+</pre>
+
+<code><error_message></code> is the serialized error message string, for example:
+
+<pre>
+void errorExample() {
+    throw new Exception("This is a error example.");
+}
+</pre>
+
+<pre>
+Cs12"errorExample"z               # client call
+
+Es24"This is a error example."z   # server reply
+</pre>
+
+=Formal Definitions=
+
+[http://tools.ietf.org/html/rfc4234 ABNF]:
+<pre>
+
+end = %x7A
+
+function-name = string
+
+function-arguments = list
+
+rpc-call = %x43 function-name [function-arguments] end
+
+rpc-result = %x52 serialize-data end
+
+rpc-error = %x45 string end
+
+rpc-reply = rpc-error / rpc-result
+
+</pre>
+
+=Authors Information=
+
+ 	Ma Bingyao <mabingyao@gmail.com>
+
+=Copyright and Licensing=
+
+© Copyright 2008-2019 Hprose.com. All Rights Reserved.
+
+Any party may implement this protocol for any purpose under the terms of the MIT License, provided that the implementation conforms to this specification. 
+
+This document and translations of it may be copied and furnished to others, and derivative works that comment on or otherwise explain it or assist in its implementation may be prepared, copied, published and distributed, in whole or in part, without restriction of any kind, provided that the above copyright notice and these paragraphs are included on all such copies and derivative works.
+
+THIS DOCUMENT AND THE INFORMATION CONTAINED HEREIN IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
