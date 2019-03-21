@@ -5,6 +5,7 @@ Hprose RPC 3.0 协议相比之前的版本做了简化。现在仅保留以下�
 * 0x43('C'): RPC 调用
 * 0x52('R'): RPC 结果
 * 0x45('E'): RPC 错误
+* 0x48('H'): RPC 头部
 * 0x7A('z'): 结束
 
 ==函数名列表==
@@ -123,6 +124,30 @@ Cs12"errorExample"z               # 客户端调用
 Es24"This is a error example."z   # 服务器端应答
 </pre>
 
+==RPC 头部==
+
+RPC 头部标记是 Hprose RPC 3.0 中新增的，它是可选项。
+
+RPC 头部用来从客户端到服务端，或从服务端到客户端，传递参数和结果以外的数据。它的格式如下：
+
+<pre>
+H<map>
+</pre>
+
+它不会单独被发送，如果它存在，那么它总是被放在请求之前或者响应之前。例如：
+
+<pre>
+m2{s4"user"s3"Tom"s5"token"s8"abcdef78"}Cs5"hello"a1{s5"world"}z
+</pre>
+
+<pre>
+m1{s13"authenticated"t}Rs12"Hello world!"z
+</pre>
+
+<pre>
+m1{s13"authenticated"f}Es24"This is a error example."z
+</pre>
+
 =形式化定义=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
@@ -134,11 +159,13 @@ function-name = string
 
 function-arguments = list
 
-rpc-call = %x43 function-name [function-arguments] end
+rpc-header = %x48 map
 
-rpc-result = %x52 serialize-data end
+rpc-call = [rpc-header] %x43 function-name [function-arguments] end
 
-rpc-error = %x45 string end
+rpc-result = [rpc-header] %x52 serialize-data end
+
+rpc-error = [rpc-header] %x45 string end
 
 rpc-reply = rpc-error / rpc-result
 
