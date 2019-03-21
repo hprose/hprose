@@ -26,17 +26,17 @@ hprose 是 High Performance Remote Object Service Engine 的首字母缩写，�
 
 === hprose 采用什么方式序列化数据？ ===
 
-hprose 拥有自己的[https://github.com/hprose/hprose/blob/master/spec_zh_CN.mediawiki#-2 序列化格式]，这是一种紧凑的半文本的序列化格式。
+hprose 拥有自己的[https://github.com/hprose/hprose/blob/master/3.0/Hprose%203.0%20%E5%BA%8F%E5%88%97%E5%8C%96%E5%8D%8F%E8%AE%AE%E8%A7%84%E8%8C%83.mediawiki]，这是一种紧凑的半文本的序列化格式。
 
-=== 为什么不使用 XML 序列化方式？ ===
+=== 为什么不默认使用 XML 序列化方式？ ===
 
 XML 太臃肿了，而且解析效率太低。
 
-=== 为什么不使用 JSON 序列化方式？ ===
+=== 为什么不默认使用 JSON 序列化方式？ ===
 
 JSON 确实是一种不错的数据序列化方式，但是它可以表示的数据类型有限，不支持数据中包含自引用和互引用，序列化和反序列化复杂数据效率较低。虽然拥有众多的实现，但是不同的实现之间存在很多兼容性问题。
 
-=== 为什么不使用 protobuf 序列化方式？ ===
+=== 为什么不默认使用 protobuf 序列化方式？ ===
 
 protobuf(Protocol Buffer) 确实是一种比较高效的序列化方式。
 
@@ -44,7 +44,7 @@ protobuf(Protocol Buffer) 确实是一种比较高效的序列化方式。
 
 况且 hprose 的序列化实现并不比这些慢，比如在 Java，.NET 等语言中，hprose 动态序列化的性能都远超 protobuf 静态序列化的性能。
 
-=== 为什么不使用 hessian 序列化方式？ ===
+=== 为什么不默认使用 hessian 序列化方式？ ===
 
 hessian 序列化方式跟 hprose 类似，都属于动态序列化方式。
 
@@ -60,7 +60,7 @@ hessian 序列化方式跟 hprose 类似，都属于动态序列化方式。
 
 所以，完全没必要使用 hessian 序列化方式。
 
-=== 为什么不使用 msgpack 序列化方式？ ===
+=== 为什么不默认使用 msgpack 序列化方式？ ===
 
 msgpack 序列化方式跟 hessian 类似，也是动态序列化，也是二进制序列化，但是性能和跨语言能力比 hessian 要高的多。不过 msgpack（MessagePack）序列化方式出现较晚，hprose 开发时，还没有 msgpack 序列化方式。在 msgpack 成为一种成熟的序列化格式时，hprose 也已经被广泛使用了。
 
@@ -74,7 +74,7 @@ msgpack 虽然有众多实现，但是在常用语言实现的精致度和灵活
 
 hprose 序列化在实现上提供了细粒度的序列化和反序列化接口，hprose 远程调用的实现之所以能够做到比其他 RPC 更动态灵活的类型映射，也是得益于这些细粒度的序列化和反序列化接口。而 msgpack 在实现上并不具备这种细粒度的接口。所以在这方面，hprose 具有 msgpack 完全不能取代的优势。
 
-=== 为什么不使用 ... 序列化方式? ===
+=== 为什么不默认使用 ... 序列化方式? ===
 
 虽然我还可以列举出十几个我所知道的序列化方式，但是就我所知的这些序列化方式来说，还没有一个可以在总体上全面超越 hprose 序列化的，所以在 hprose 的 RPC 实现上暂时还是只支持 hprose 这一种序列化方式。世界上也许还有好几百种不同的数据序列化方式，但是我实在没有精力将它们一一研究。
 
@@ -135,3 +135,9 @@ const hprose = require('hprose-js/dist/hprose.src.js');
 </code>
 
 方式来包含源码版本。压缩版本在 React Native 中不能被正确识别。
+
+=== 支持 TypeScript 吗？===
+
+Hprose 3.0 的 JavaScript 版本是完全使用 TypeScript 编写的。所以如果使用 hprose 3.0 的话，可以完美支持 TypeScript，当然你也可以在 JavaScript 中使用它，即使在 JavaScript 中使用 TypeScript 版本，如果你的编辑器支持代码提示功能，你也可以得到每个 API 的含有类型参数的提示。
+
+Hprose 3.0 的 TypeScript 版本采用模块化方式实现。它不但包含单独为 Nodejs，HTML5 和微信小程序编写的模块，而且序列化模块也可以单独使用。同时 3.0 版本还内置了许多常用的插件模块。所以，现在如果你打算使用在 JavaScript 中使用 Hprose 的话，推荐使用 3.0 版本。
