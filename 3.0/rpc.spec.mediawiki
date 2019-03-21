@@ -5,6 +5,7 @@ Hprose RPC 3.0 protocol is simpler than previous versions. For now, only the fol
 * 0x43('C'): RPC Call
 * 0x52('R'): RPC Result
 * 0x45('E'): RPC Error
+* 0x48('H'): RPC Header
 * 0x7A('z'): End
 
 ==Function List==
@@ -123,6 +124,32 @@ Cs12"errorExample"z               # client call
 Es24"This is a error example."z   # server reply
 </pre>
 
+==RPC Header==
+
+RPC header tag is added in Hprose RPC 3.0. It is optional.
+
+RPC header is used to transport data other than parameters and results from the client to the server, or from the server to the client.
+
+It has the following format:
+
+<pre>
+H<map>
+</pre>
+
+It will not be sent alone, and if it exists, it will always be placed before the rpc call or the rpc reply. For example:
+
+<pre>
+m2{s4"user"s3"Tom"s5"token"s8"abcdef78"}Cs5"hello"a1{s5"world"}z
+</pre>
+
+<pre>
+m1{s13"authenticated"t}Rs12"Hello world!"z
+</pre>
+
+<pre>
+m1{s13"authenticated"f}Es24"This is a error example."z
+</pre>
+
 =Formal Definitions=
 
 [http://tools.ietf.org/html/rfc4234 ABNF]:
@@ -134,11 +161,13 @@ function-name = string
 
 function-arguments = list
 
-rpc-call = %x43 function-name [function-arguments] end
+rpc-header = %x48 map
 
-rpc-result = %x52 serialize-data end
+rpc-call = [rpc-header] %x43 function-name [function-arguments] end
 
-rpc-error = %x45 string end
+rpc-result = [rpc-header] %x52 serialize-data end
+
+rpc-error = [rpc-header] %x45 string end
 
 rpc-reply = rpc-error / rpc-result
 
