@@ -61,8 +61,6 @@
 
 它们具有相同的工作模式，只是接口和所处理的数据有所不同。
 
-不论客户端还是服务端，这两种类型的处理器都可以添加任意多个并可进行自由组合。
-
 客户端和服务的各自拥有独立的编解码器（`Codec`），默认的编解码器使用 Hprose 序列化和 Hprose RPC 协议进行编解码处理。
 
 编解码器是可替换的，通过替换编解码器，Hprose 客户端或服务端可以变身为其它 RPC 的客户端或服务端。例如，如果实现了 JSONRPC 编解码器，Hprose 客户端和服务端就完全可以作为 JSONRPC 的客户端和服务端来使用，并且可以与其它方式实现的 JSONRPC 客户端或服务端进行互通。
@@ -121,6 +119,8 @@
 * `remove`
 * `addMissingMethod`
 
+每种语言在实现时，这些方法在命名上可能会有大小写上的区别。
+
 其中 `getNames` 方法返回所有已发布的方法名列表，该方法本身也会作为一个特殊的服务方法被发布，为了避免跟用户发布的方法有命名冲突，在发布时，该方法是以特殊字符 `~` 来作为发布名称来发布的。
 
 `add` 方法用来添加发布的服务方法。该方法在不同的语言中，可以根据具体情况下提供多个重载或不同命名的多个实现，例如：`addMethod`，`addMethods`，`addFunction`，`addFunctions`，`addStaticMethods`，`addInstanceMethods` 等等。
@@ -137,4 +137,146 @@
 用户通常不需要直接使用服务方法管理器（`MethodManager`），因为在服务端 `Service` 类型中它是作为一个内部属性出现的，它所包含的方法也是由 `Service` 类型对象所暴露的。
 
 但是当开发插件时，如果需要用到服务发布管理的功能，用户可以在插件中使用服务方法管理器（`MethodManager`），例如在反向调用插件的实现中，就使用了服务方法管理器（`MethodManager`）。
+
+## 插件处理器
+
+在 hprose 2.0 中，插件处理器被称为“中间件”。在 hprose 3.0 中，为了便于跟其它框架中的“中间件”进行区分，我们将它改称为“插件处理器”。
+
+因为插件处理器不但可以实现之前版本中调用拦截器和过滤器的功能，而且还能实现它们完成不了功能。因此在 hprose 3.0 的设计和实现中，取消了调用拦截器和过滤器，只保留了插件处理器。
+
+插件处理器分为两种，一种是调用处理器（`InvokeHandler`），一种是输入输出处理器（`IOHandler`）。
+
+不论客户端还是服务端，这两种类型的处理器都可以添加任意多个并可进行自由组合。
+
+在客户端，调用处理器先被执行，在服务端，输入输出处理器先被执行。
+
+每种类型的处理器都按照添加顺序执行，假设添加的调用处理器分别为：invokeHandler1, invokeHandler2 ... invokeHandlerN，那么执行顺序就是 invokeHandler1, invokeHandler2 ... invokeHandlerN。
+
+### 调用处理器
+
+调用处理器的形式在不同的语言中有所不同，但参数都是一样的。
+
+例如在 C# 中，它的形式如下：
+
+```csharp
+delegate Task<object> NextInvokeHandler(string name, object[] args, Context context);
+delegate Task<object> InvokeHandler(string name, object[] args, Context context, NextInvokeHandler next)
+```
+
+在 TypeScript 中，它的形式如下：
+
+```ts
+type NextInvokeHandler = (name: string, args: any[], context: Context) => Promise<any>;
+type InvokeHandler = (name: string, args: any[], context: Context, next: NextInvokeHandler) => Promise<any>;
+```
+
+在 Dart 中，它的形式如下：
+
+```dart
+typedef Future NextInvokeHandler(String name, List args, Context context);
+typedef Future InvokeHandler(String name, List args, Context context, NextInvokeHandler next);
+```
+
+要定义一个调用处理器，只需要实现 `InvokeHandler` 即可，你可以将它实现为一个函数，方法或者匿名函数，例如：
+
+```csharp
+InvokeHandler myInvokeHandler = (name, args, context, next) => {
+    ...
+    var result = next(name, args, context);
+    ...
+    return result;
+}
+```
+
+`name` 是服务方法的发布名称。
+
+`args` 是调用参数。
+
+`context` 是调用的上下文对象，在客户端你可以将它转换为一个 `ClientContext` 类型的对象，在服务端你可以将它转换为一个 `ServiceContext` 类型的对象。
+
+`next` 表示下一个调用处理器，它是由调用管理器（`InvokeManager`）自动生成的。在调用处理器中，通过调用 `next` 将各个调用处理器串联起来。
+
+在调用 `next` 之前的操作在调用发生前执行，在调用 `next` 之后的操作在调用发生后执行，如果你不想修改返回结果，你应该将 `next` 的返回值作为该调用处理器的返回值返回。
+
+如果你在调用处理器中跳过对 `next` 的调用，则在该调用处理器之后添加的调用处理器以及后面的步骤都会跳过执行。
+
+如果在调用处理器中发生异常，异常信息会作为结果返回给上一层调用处理器。
+
+调用管理器（`InvokeManager`）用来管理调用处理器（`InvokeHandler`）的添加和删除。它主要包含两个方法：
+
+* `use`
+* `unuse`
+
+每种语言在实现时，这两个方法在命名上可能会有大小写上的区别。有些语言中，`use` 可能会是一个关键字而不能作为方法名使用，这种情况下，这两个方法可以被命名为：
+
+* `addHandler`
+* `removeHandler`
+
+调用管理器中还包含一个 `handler` 属性，用来返回第一个调用处理器。
+
+用户通常不需要直接使用调用管理器（`InvokeManager`），因为在客户端 `Client` 和服务端 `Service` 类型中它是作为一个内部属性出现的，它所包含的方法也是由 `Client` 和 `Service` 类型对象所暴露的。
+
+但是如果有必要，用户可以在插件中使用调用管理器（`InvokeManager`），例如在反向调用插件的实现中，就使用了调用管理器（`InvokeManager`）。
+
+### 输入输出处理器
+
+输入输出处理器的形式在不同的语言中有所不同，但参数都是一样的。
+
+例如在 C# 中，它的形式如下：
+
+```csharp
+delegate Task<Stream> NextIOHandler(Stream request, Context context);
+delegate Task<Stream> IOHandler(Stream request, Context context, NextIOHandler next);
+```
+
+在 TypeScript 中，它的形式如下：
+
+```ts
+type NextIOHandler = (request: Uint8Array, context: Context) => Promise<Uint8Array>;
+type IOHandler = (request: Uint8Array, context: Context, next: NextIOHandler) => Promise<Uint8Array>;
+```
+
+在 Dart 中，它的形式如下：
+
+```dart
+typedef Future<Uint8List> NextIOHandler(Uint8List request, Context context);
+typedef Future<Uint8List> IOHandler(Uint8List request, Context context, NextIOHandler next);
+```
+
+要定义一个输入输出处理器，只需要实现 `IOHandler` 即可，你可以将它实现为一个函数，方法或者匿名函数，例如：
+
+```csharp
+IOHandler myIOHandler = (request, context, next) => {
+    ...
+    var response = next(request, context);
+    ...
+    return response;
+}
+```
+
+`request` 是序列化后的请求数据。
+
+`context` 是调用的上下文对象，在客户端你可以将它转换为一个 `ClientContext` 类型的对象，在服务端你可以将它转换为一个 `ServiceContext` 类型的对象。
+
+`next` 表示下一个输入输出处理器，它是由输入输出管理器（`IOManager`）自动生成的。在输入输出处理器中，通过调用 `next` 将各个输入输出处理器串联起来。
+
+在调用 `next` 之前的操作在调用发生前执行，在调用 `next` 之后的操作在调用发生后执行，如果你不想修改返回结果，你应该将 `next` 的返回值作为该输入输出处理器的返回值返回。
+
+如果你在输入输出处理器中跳过对 `next` 的调用，则在该输入输出处理器之后添加的输入输出处理器以及后面的步骤都会跳过执行。
+
+如果在输入输出处理器中发生异常，异常信息会作为结果返回给上一层输入输出处理器。
+
+输入输出管理器（`IOManager`）用来管理输入输出处理器（`IOHandler`）的添加和删除。它主要包含两个方法：
+
+* `use`
+* `unuse`
+
+每种语言在实现时，这两个方法在命名上可能会有大小写上的区别。有些语言中，`use` 可能会是一个关键字而不能作为方法名使用，这种情况下，这两个方法可以被命名为：
+
+* `addHandler`
+* `removeHandler`
+
+输入输出管理器中还包含一个 `handler` 属性，用来返回第一个输入输出处理器。
+
+用户通常不需要直接使用输入输出管理器（`IOManager`），因为在客户端 `Client` 和服务端 `Service` 类型中它是作为一个内部属性出现的，它所包含的方法也是由 `Client` 和 `Service` 类型对象所暴露的。
 
