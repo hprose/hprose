@@ -282,3 +282,59 @@ IOHandler myIOHandler = (request, context, next) => {
 
 用户通常不需要直接使用输入输出管理器（`IOManager`），因为在客户端 `Client` 和服务端 `Service` 类型中它是作为一个内部属性出现的，它所包含的方法也是由 `Client` 和 `Service` 类型对象所暴露的。
 
+## 编解码器
+
+服务端和客户端拥有各自的编解码器接口定义。虽然在形式上，不同的语言有所不同，但参数都是一样的。
+
+例如在 C# 中，接口定义为：
+
+```csharp
+public interface IServiceCodec {
+    Stream Encode(object result, ServiceContext context);
+    Task<(string, object[])> Decode(Stream request, ServiceContext context);
+}
+
+public interface IClientCodec {
+    Stream Encode(string name, object[] args, ClientContext context);
+    Task<object> Decode(Stream response, ClientContext context);
+}
+```
+
+在 TypeScript，接口定义为：
+
+```ts
+interface ServiceCodec {
+    encode(result: any, context: ServiceContext): Uint8Array;
+    decode(request: Uint8Array, context: ServiceContext): [string, any[]];
+}
+
+interface ClientCodec {
+    encode(name: string, args: any[], context: ClientContext): Uint8Array;
+    decode(response: Uint8Array, context: ClientContext): any;
+}
+```
+
+在 Dart 中，接口定义为：
+
+```dart
+class RequestInfo {
+  final String name;
+  final List args;
+  RequestInfo(this.name, this.args);
+}
+
+abstract class ServiceCodec {
+  Uint8List encode(result, ServiceContext context);
+  RequestInfo decode(Uint8List request, ServiceContext context);
+}
+
+abstract class ClientCodec {
+  Uint8List encode(String name, List args, ClientContext context);
+  dynamic decode(Uint8List response, ClientContext context);
+}
+```
+
+Hprose 3.0 中内置的默认编解码器是使用 hprose 序列化和 hprose RPC 编码协议实现的。另外，还提供了 JSONRPC 2.0 编解码器。它们都是上面这两个接口的具体实现。用户可以通过自定义编解码器来支持更多的 RPC 协议。
+
+
+
