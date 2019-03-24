@@ -336,5 +336,141 @@ abstract class ClientCodec {
 
 Hprose 3.0 中内置的默认编解码器是使用 hprose 序列化和 hprose RPC 编码协议实现的。另外，还提供了 JSONRPC 2.0 编解码器。它们都是上面这两个接口的具体实现。用户可以通过自定义编解码器来支持更多的 RPC 协议。
 
+客户端和服务端各有一个 `codec` 属性，该属性的默认值为 hprose 编解码器。通过给该属性赋值为其它编解码器的实例对象，可以将客户端或服务端变为其它类型的 RPC 客户端或服务端。
 
+## 传输接口
+
+在客户端，传输层被设计为一个 `Transport` 接口，它只有两个方法：`transport` 和 `abort`。该接口在不语言中虽然定义有所不同，但在形式和参数上大致是一致的。
+
+例如在 C# 中，该接口定义为：
+
+```csharp
+public interface ITransport {
+    Task<Stream> Transport(Stream request, Context context);
+    Task Abort();
+}
+```
+
+在 TypeScript 中，该接口定义为：
+
+```ts
+interface Transport {
+    transport(request: Uint8Array, context: Context): Promise<Uint8Array>;
+    abort(): Promise<void>;
+}
+
+interface TransportConstructor {
+    readonly schemes: string[];
+    new(): Transport
+}
+```
+
+在 Dart 中，该接口定义为：
+
+```dart
+abstract class Transport {
+  Future<Uint8List> transport(Uint8List request, Context context);
+  Future<void> abort();
+}
+
+abstract class TransportCreator<T extends Transport> {
+  List<String> schemes;
+  T create();
+}
+```
+
+该接口的实现还应有一个名为 `schemes` 的静态属性和一个无参构造函数。但大部分语言的接口没有办法对静态属性和构造函数做出约定，因此在接口定义中，体现不出这一点来。
+
+`schemes` 属性用来描述该接口的实现支持那些传输协议，例如：`http`，`https`，`tcp`，`tcp4`，`tcp6`，`tls`，`udp`，`websocket`，`unix` 等。因为一个传输接口实现可能支持多种传输协议，因此该属性为一个字符串数组或字符串列表。
+
+`transport` 方法用于实际传输的实现，`request` 是请求数据，返回值是响应数据。与请求相关的其它数据，比如服务地址，超时间隔等则在 `context` 参数中。
+
+`abort` 方法用于中断与服务器的连接或请求。该方法在某些情况下不一定有实际实现的代码。
+
+客户端有一个 `register` 静态方法，用来注册传输接口实现。
+
+例如在 C# 中，该方法定义为：
+
+```csharp
+public static void Register<T>(string name) where T : ITransport, new();
+```
+
+在 TypeScript 中，该方法被定义为：
+
+```ts
+public static register(name: string, ctor: TransportConstructor): void;
+```
+
+在 Dart 中，该方法被定义为：
+
+```dart
+static void register<T extends Transport>(String name, TransportCreator<T> creator);
+```
+
+虽然在不同语言中，形式和参数上有些差异，但是实现的功能是一样的。
+
+但用户几乎不需要用到 `register` 静态方法，因为默认提供的传输接口的实现都已经注册过了。除非用户实现自己的传输接口时，才需要用该方法来进行注册。
+
+## 处理器接口
+
+在服务端，处理器接口用来把服务跟具体的服务器绑定在一起。在这里，服务是指独立于具体传输协议的 RPC 服务，它是由 `Service` 类型实现的。而具体的服务器是指 `http`，`tcp`，`udp`，`websocket` 等服务器，这些服务器是由语言本身所提供的标准库、第三方类库或框架实现的。
+
+在 C# 中，该接口定义如下：
+
+```csharp
+public interface IHandler<T> {
+    Task Bind(T server);
+}
+```
+
+在 TypeScript 中，该接口定义为：
+
+```ts
+interface Handler {
+    bind(server: any): void;
+}
+
+interface HandlerConstructor {
+    new(service: Service): Handler;
+}
+```
+
+在 Dart 中，该接口定义为：
+
+```dart
+abstract class Handler<T> {
+  void bind(T server);
+}
+
+abstract class HandlerCreator<T extends Handler> {
+  List<String> serverTypes;
+  T create(Service service);
+}
+```
+
+该接口的实现应包含一个有参构造函数，参数为 `Service` 类型。即通过构造函数，将该处理器与服务绑定，然后通过 `bind` 方法，将该处理器与具体的服务器绑定。
+
+与客户端类似，服务端也包含一个 `register` 静态方法，用来将注册处理器接口的实现。
+
+例如在 C# 中，该方法定义为：
+
+```csharp
+public static void Register<T, S>(string name) where T : IHandler<S>;
+```
+
+在 TypeScript 中，该方法定义为：
+
+```ts
+public static register(name: string, ctor: HandlerConstructor, serverTypes: Function[]): void;
+```
+
+在 Dart 中，该方法定义为：
+
+```dart
+static void register<T extends Handler>(String name, HandlerCreator<T> creator);
+```
+
+虽然在不同语言中，形式和参数上有些差异，但是实现的功能是一样的。
+
+一般来说，语言标准库中提供的服务器在默认实现中都已经自动注册了。扩展库，第三方类库或框架中提供的服务器所对应的处理器则需要用户自己注册。如果某个第三方类库或框架所提供的服务器没有默认对应的处理器实现，用户也可以自行实现和注册。
 
